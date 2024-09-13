@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "503565284680",
+    "project_id": "mailydaily",
+    "storage_bucket": "mailydaily.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503565284680:android:0a7fbdeaf39635c5edaf7d",
+        "android_client_info": {
+          "package_name": "com.mariankh.mailydaily"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "503565284680-mubhmnp3fc8r7deplicsfi13p2sbu4vd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOuJMiYFZGGTE8gTe7etOUwHST0moubks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "503565284680-mubhmnp3fc8r7deplicsfi13p2sbu4vd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
