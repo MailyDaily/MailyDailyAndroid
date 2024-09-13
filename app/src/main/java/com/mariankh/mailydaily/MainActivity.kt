@@ -1,12 +1,14 @@
 package com.mariankh.mailydaily
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,6 +38,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import coil.compose.rememberImagePainter
 import kotlinx.coroutines.CoroutineScope
+import com.google.api.services.gmail.model.MessagePart
+import com.google.api.services.gmail.model.MessagePartHeader
+import java.util.Base64
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
 
@@ -45,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private var emailContentList: List<String> by mutableStateOf(emptyList())
     private var isLoading by mutableStateOf(false)
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -89,6 +96,7 @@ class MainActivity : ComponentActivity() {
         Log.d("SIGN_IN", "Sign-in ok? 2 ")
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             Log.d("SIGN_IN", "Handling sign-in result")
@@ -103,6 +111,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun fetchEmails(account: GoogleSignInAccount) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -132,7 +141,7 @@ class MainActivity : ComponentActivity() {
                 val emailContents = mutableListOf<String>()
                 for (message in messages) {
                     val msg: Message = service.users().messages().get("me", message.id).execute()
-                    val emailContent = extractEmailContent(msg)
+                    val emailContent = extractEmailContent(msg, service)
                     emailContents.add(emailContent)
                 }
 
@@ -146,11 +155,63 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun extractEmailContent(message: Message): String {
-        // Extract email content from the Message object
-        return message.snippet ?: "No content"
+    private fun extractEmailContent(message: Message, service: Gmail): String {
+        // Extract email details from the Message object
+        val messageId = message.id ?: "No ID"
+        val msg: Message = service.users().messages().get("me", messageId).execute()
+        val emailDate = msg.internalDate?.let { Date(it) } ?: Date()
+        val emailSnippet = msg.snippet ?: "No snippet"
+        val senderEmail = getSenderEmail(msg)
+        val emailFullText = "" //extractEmailBody(msg.payload)
+
+        return "Email ID: $messageId\n" +
+                "Received at: $emailDate\n" +
+                "From: $senderEmail\n" +
+                "Snippet: $emailSnippet\n" +
+                "Full Text: $emailFullText"
+    }
+    private fun getSenderEmail(message: Message): String {
+        val headers: List<MessagePartHeader>? = message.payload?.headers
+        val fromHeader = headers?.find { it.name == "From" }
+        return fromHeader?.value ?: "Unknown sender"
     }
 
+    private fun extractEmailBody(payload: MessagePart?): String {
+        if (payload == null) return "No content available"
+
+        // Attempt to decode the body from Base64
+        @RequiresApi(Build.VERSION_CODES.O)
+        fun decodeBase64(encoded: String?): ByteArray? {
+            return try {
+                if (encoded == null) null
+                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Base64.getUrlDecoder().decode(encoded)
+                } else {
+                    TODO("VERSION.SDK_INT < O")
+                } // URL-safe Base64 decoder
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+
+        // Check if there are parts
+        payload.body?.let {
+            val bodyData = decodeBase64(it.data)
+            if (bodyData != null) return String(bodyData)
+        }
+
+        if (payload.parts != null && payload.parts.isNotEmpty()) {
+            for (part in payload.parts) {
+                val mimeType = part.mimeType ?: continue
+                val partData = decodeBase64(part.body?.data)
+                if (partData != null && (mimeType == "text/plain" || mimeType == "text/html")) {
+                    return String(partData)
+                }
+            }
+        }
+
+        return "No content available"
+    }
     @Composable
     fun Greeting(name: String, modifier: Modifier = Modifier, onSignInClick: () -> Unit) {
         Column(
