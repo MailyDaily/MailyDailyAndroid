@@ -1,8 +1,6 @@
 package com.mariankh.mailydaily
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -16,8 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -38,17 +34,6 @@ import com.mariankh.mailydaily.ui.theme.MailyDailyTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
-import java.io.IOException
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
 import kotlinx.coroutines.CoroutineScope
 
@@ -58,6 +43,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var signInLauncher: ActivityResultLauncher<Intent>
     private var userAccount: GoogleSignInAccount? by mutableStateOf(null)
     private var emailContentList: List<String> by mutableStateOf(emptyList())
+    private var isLoading by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,8 +64,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
-
         setContent {
             MailyDailyTheme {
                 Surface(
@@ -87,7 +71,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (userAccount != null) {
-                        UserInfoDisplay(userAccount!!, emailContentList)
+                        UserInfoDisplay(userAccount!!, emailContentList, isLoading)
                     } else {
                         Greeting("Android") {
                             initiateSignIn()
@@ -123,6 +107,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.d("EMAIL_FETCH", "Fetching emails")
+                isLoading = true
                 val credential = GoogleAccountCredential.usingOAuth2(
                     this@MainActivity, listOf("https://www.googleapis.com/auth/gmail.readonly")
                 ).apply {
@@ -151,21 +136,15 @@ class MainActivity : ComponentActivity() {
                     emailContents.add(emailContent)
                 }
 
-
-                    // Update UI with the fetched emails on the main thread
-                    emailContentList = emailContents
-                    Log.d("EMAIL_FETCH", "Emails fetched successfully")
-
+                emailContentList = emailContents
+                Log.d("EMAIL_FETCH", "Emails fetched successfully")
             } catch (e: Exception) {
                 Log.e("EMAIL_FETCH", "Error fetching emails", e)
-
-                    // Handle the error (e.g., show a message to the user)
-                    // Update UI to indicate error
-
+            } finally {
+                isLoading = false
             }
         }
     }
-
 
     private fun extractEmailContent(message: Message): String {
         // Extract email content from the Message object
@@ -186,8 +165,9 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
+
     @Composable
-    fun UserInfoDisplay(userAccount: GoogleSignInAccount, emailContentList: List<String>) {
+    fun UserInfoDisplay(userAccount: GoogleSignInAccount, emailContentList: List<String>, isLoading: Boolean) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -216,11 +196,21 @@ class MainActivity : ComponentActivity() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(text = "Here are your unread emails:", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            emailContentList.forEach { emailContent ->
-                Text(text = emailContent, style = MaterialTheme.typography.bodyMedium)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(Alignment.Center)
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Text(text = "Here are your unread emails:", style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(8.dp))
+                emailContentList.forEach { emailContent ->
+                    Text(text = emailContent, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
