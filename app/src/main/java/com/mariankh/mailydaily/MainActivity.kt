@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,13 +64,14 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        signInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val data = result.data
-                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-                handleSignInResult(task)
+        signInLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    val data = result.data
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                    handleSignInResult(task)
+                }
             }
-        }
 
         setContent {
             MailyDailyTheme {
@@ -170,6 +172,7 @@ class MainActivity : ComponentActivity() {
                 "Snippet: $emailSnippet\n" +
                 "Full Text: $emailFullText"
     }
+
     private fun getSenderEmail(message: Message): String {
         val headers: List<MessagePartHeader>? = message.payload?.headers
         val fromHeader = headers?.find { it.name == "From" }
@@ -212,6 +215,7 @@ class MainActivity : ComponentActivity() {
 
         return "No content available"
     }
+
     @Composable
     fun Greeting(name: String, modifier: Modifier = Modifier, onSignInClick: () -> Unit) {
         Column(
@@ -228,7 +232,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun UserInfoDisplay(userAccount: GoogleSignInAccount, emailContentList: List<String>, isLoading: Boolean) {
+    fun UserInfoDisplay(
+        userAccount: GoogleSignInAccount,
+        emailContentList: List<String>,
+        isLoading: Boolean
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -266,15 +274,43 @@ class MainActivity : ComponentActivity() {
                     CircularProgressIndicator()
                 }
             } else {
-                Text(text = "Here are your unread emails:", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    text = "Here are your unread emails:",
+                    style = MaterialTheme.typography.headlineMedium
+                )
                 Spacer(modifier = Modifier.height(8.dp))
-                emailContentList.forEach { emailContent ->
-                    Text(text = emailContent, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(emailContentList.size) { index -> // Using the index to access each item
+                        Card(
+                            shape = MaterialTheme.shapes.medium, // Rounded corners
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp), // Padding around each card
+                            //elevation = 4
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(16.dp) // Padding inside the card
+                            ) {
+                                Text(
+                                    text = emailContentList[index], // Access the email content by index
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                )
+                            }
+                        }
+                    }
                 }
+
             }
         }
     }
+
 
     @Preview(showBackground = true)
     @Composable
