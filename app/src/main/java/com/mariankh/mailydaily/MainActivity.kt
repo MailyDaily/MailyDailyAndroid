@@ -4,6 +4,7 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,14 +14,24 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -157,15 +168,14 @@ class MainActivity : ComponentActivity() {
                         val emailContent = extractEmailContent(msg, service)
 
                         // Classify the email and extract actions
-                       // val categoryDeferred = async { classifyEmailCategory(emailContent.fullText) }
+                        val actionsDeferred = async { extractRecommendedActions("FROM:" +emailContent.sender+ " DATE: "+ emailContent.date +" " + emailContent.fullText) }
 
-                        val actionsDeferred = async { extractRecommendedActions(emailContent.fullText) }
+                        val (summary, actions) = actionsDeferred.await()
 
-                        val category = "" //categoryDeferred.await()
-                        val actions = actionsDeferred.await()
-
-                        emailContent.category = category
+                        // Update the email content with the fetched summary and actions
+                        emailContent.fullText = summary
                         emailContent.actions = actions
+
                         emailContents.add(emailContent)
                     }
                 }
@@ -204,40 +214,11 @@ class MainActivity : ComponentActivity() {
      *
      */
 
-    suspend fun classifyEmailCategory(emailContent: String): String = withContext(Dispatchers.IO) {
-        val apiKey = "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"
-        val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
-        val client = OkHttpClient()
-        val jsonBody = JSONObject().apply {
-            put("model", "mistralai/Mistral-Nemo-Instruct-2407")
-            put("messages", JSONArray().put(JSONObject().apply {
-                put("role", "user")
-                put("content", "Give me a one word category for this email" + emailContent)
-            }))
-            put("max_tokens", 500)
-            put("stream", false)
-        }.toString()
-
-        val request = Request.Builder()
-            .url(url)
-            .post(RequestBody.create("application/json".toMediaTypeOrNull(), jsonBody))
-            .addHeader("Authorization", "Bearer $apiKey")
-            .build()
-
-        val response = client.newCall(request).execute()
-        if (response.isSuccessful) {
-            val jsonObject = JSONObject(response.body?.string().orEmpty())
-            jsonObject.optString("category", "Unknown")
-        } else {
-            "Error: ${response.message}"
-        }
-    }
-
-    suspend fun extractRecommendedActions(emailContent: String): List<String> = withContext(Dispatchers.IO) {
+    suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> = withContext(Dispatchers.IO) {
         Log.d("EXTRACT ACTIONS", "Starting request with email content: ${emailContent.take(500)}...")
 
-        val apiKey = "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"
+        val apiKey = "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"
         val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
         val client = OkHttpClient()
@@ -267,37 +248,54 @@ class MainActivity : ComponentActivity() {
             Log.d("EXTRACT ACTIONS", "Sending request to API")
             val response = client.newCall(request).execute()
 
-            Log.d("EXTRACT ACTIONS", "Response received")
-            Log.d("RESPONSE CODE", response.code.toString())
-
+            Log.d("EXTRACT ACTIONS", "Response received with code: ${response.code}")
             if (response.isSuccessful) {
                 val responseBody = response.body?.string().orEmpty()
                 Log.d("RESPONSE", "Response body: $responseBody")
 
                 val jsonObject = JSONObject(responseBody)
                 val choicesArray = jsonObject.optJSONArray("choices")
-                val actions = mutableListOf<String>()
+                var summary = ""
+                val actions = mutableListOf<ActionItem>()
 
                 choicesArray?.let { array ->
-                    for (i in 0 until array.length()) {
-                        val item = array.getJSONObject(i)
+                    if (array.length() > 0) {
+                        val item = array.getJSONObject(0)
                         val message = item.optJSONObject("message")
                         val generatedText = message?.optString("content", "No text available")
                         if (!generatedText.isNullOrBlank()) {
-                            actions.add(generatedText)
+                            val lines = generatedText.split("\n").map { it.trim() }
+                            val summaryIndex = lines.indexOfFirst { it.startsWith("**Summary:**") }
+                            if (summaryIndex != -1) {
+                                summary = lines[summaryIndex].removePrefix("**Summary:**").trim()
+                            }
+                            val actionsIndex = lines.indexOfFirst { it.startsWith("**Recommended Actions:**") }
+                            if (actionsIndex != -1) {
+                                val actionLines = lines.drop(actionsIndex + 1)
+                                actionLines.forEach { line ->
+                                    val linkRegex = """\[(.*?)\]\((.*?)\)""".toRegex()
+                                    val matchResult = linkRegex.find(line)
+                                    if (matchResult != null) {
+                                        val (text, url) = matchResult.destructured
+                                        actions.add(ActionItem(text, url))
+                                    } else {
+                                        actions.add(ActionItem(line, null))
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
-                actions
+                Pair(summary, actions)
             } else {
                 Log.e("ERROR", "Request failed with code ${response.code}")
                 Log.e("ERROR RESPONSE", response.body?.string().orEmpty())
-                emptyList()
+                Pair("Error fetching actions", emptyList())
             }
         } catch (e: Exception) {
             Log.e("ERROR", "Exception during API call", e)
-            emptyList()
+            Pair("Error fetching actions", emptyList())
         }
     }
 
@@ -362,17 +360,33 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun Greeting(name: String, modifier: Modifier = Modifier, onSignInClick: () -> Unit) {
+    fun Greeting(userType: String, onSignInClick: () -> Unit) {
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Hello $name!",
-                modifier = modifier.clickable(onClick = onSignInClick),
-                style = MaterialTheme.typography.titleLarge
+                text = "Welcome to Daily Maily, $userType!\nI am your AI-Email assistant!",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 24.dp)
             )
+            Button(
+                onClick = onSignInClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Sign in with Google")
+            }
         }
     }
 
@@ -383,8 +397,9 @@ class MainActivity : ComponentActivity() {
         isLoading: Boolean
     ) {
         var emailSummary by remember { mutableStateOf("") }
+        var actions by remember { mutableStateOf(emptyList<ActionItem>()) }
 
-        // Summarize emails once the emails have been fetched
+        // Summarize emails once they have been fetched
         if (!isLoading && emailContentList.isNotEmpty() && emailSummary.isEmpty()) {
             val emails = emailContentList.map { it.fullText }
             LaunchedEffect(emails) {
@@ -394,6 +409,12 @@ class MainActivity : ComponentActivity() {
                     emailSummary = "Error summarizing emails: $error"
                 })
             }
+        }
+
+        // Extract actions from email content
+        LaunchedEffect(emailContentList) {
+            val allActions = emailContentList.flatMap { it.actions }
+            actions = allActions
         }
 
         Column(
@@ -411,13 +432,18 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text(
                     text = "Hello, ${userAccount.displayName}!",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    )
                 )
                 userAccount.photoUrl?.let { photoUrl ->
                     Image(
                         painter = rememberImagePainter(photoUrl),
                         contentDescription = "User Profile Picture",
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     )
                 }
             }
@@ -433,10 +459,12 @@ class MainActivity : ComponentActivity() {
                     CircularProgressIndicator()
                 }
             } else {
-                // Display the summary at the top
                 Text(
                     text = "Summary of your emails:",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -445,10 +473,12 @@ class MainActivity : ComponentActivity() {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // List the emails below the summary
                 Text(
                     text = "Here are your unread emails:",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -461,9 +491,50 @@ class MainActivity : ComponentActivity() {
                         EmailCard(emailContent)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Recommended Actions:",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                actions.forEach { actionItem ->
+                    if (actionItem.url != null) {
+                        ClickableText(
+                            text = AnnotatedString(actionItem.text),
+                            onClick = { offset ->
+                                val annotatedString = AnnotatedString(actionItem.text)
+                                annotatedString.getStringAnnotations("URL", offset, offset).firstOrNull()?.let { annotation ->
+                                    val uri = Uri.parse(annotation.item)
+                                  //  LocalContext.current.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                }
+                            },
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.LineThrough
+                            )
+                        )
+                    } else {
+                        Text(
+                            text = actionItem.text,
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.LineThrough
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
         }
     }
+
+
 
 
 
@@ -473,7 +544,8 @@ class MainActivity : ComponentActivity() {
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(8.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -481,19 +553,30 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text(text = "From: ${emailContent.sender}", style = MaterialTheme.typography.bodyLarge)
                 Text(text = "Date: ${emailContent.date}", style = MaterialTheme.typography.bodyMedium)
-                Text(text = "Category: ${emailContent.category}", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = emailContent.snippet, style = MaterialTheme.typography.bodyMedium)
+                 Spacer(modifier = Modifier.height(8.dp))
+                Text(text = emailContent.fullText, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 emailContent.actions.forEach { action ->
-                    Button(onClick = { /* Handle action */ }) {
-                        Text(action)
+                    Button(
+                        onClick = { /* Handle action */ },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text(action.text)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }
     }
+
+
+
+
+
 
     fun summarizeEmails(emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
         val apiKey = "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" // Replace with your actual API key
@@ -504,7 +587,7 @@ class MainActivity : ComponentActivity() {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "ou are my mail assistant. Read this email, and tell me a summary in short and friendly way and recommended actions." + emails)
+                put("content", "You are my mail assistant. Read this email, and tell me a who is sending and for what reason and if there is anything I shall do  in short and friendly way. Offer recommended actions." + emails)
             }))
             put("max_tokens", 500)
             put("stream", false)
@@ -535,38 +618,6 @@ class MainActivity : ComponentActivity() {
             }
         })
     }
-
-    fun classifyEmailCategory(emailContent: String, onResult: (String) -> Unit, onError: (String) -> Unit) {
-        val apiKey = "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"
-        val url = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli"
-
-        val client = OkHttpClient()
-        val requestBody = JSONObject().apply {
-            put("inputs", emailContent)
-        }.toString()
-
-        val request = Request.Builder()
-            .url(url)
-            .post(RequestBody.create("application/json".toMediaTypeOrNull(), requestBody))
-            .addHeader("Authorization", "Bearer $apiKey")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                onError(e.message ?: "Unknown error")
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val responseBody = response.body?.string()
-                if (response.isSuccessful && responseBody != null) {
-                    val result = JSONObject(responseBody).optJSONArray("labels")?.getString(0) ?: "Unknown"
-                    onResult(result)
-                } else {
-                    onError("Error: ${response.message}")
-                }
-            }
-        })
-    }
 }
 
 data class EmailContent(
@@ -574,7 +625,9 @@ data class EmailContent(
     val date: String,
     val sender: String,
     val snippet: String,
-    val fullText: String,
+    var fullText: String,
     var category: String,
-    var actions: List<String>
+    var actions: List<ActionItem>
 )
+
+data class ActionItem(val text: String, val url: String?)
