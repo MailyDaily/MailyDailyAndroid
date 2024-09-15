@@ -1,31 +1,37 @@
 # MailyDaily
 
-Welcome to **MailyDaily**, a React Native app designed to manage and summarize your emails with ease. This README will guide you through setting up and configuring Firebase for your project.
+MailyDaily is an Android app that integrates with Gmail to fetch unread emails, summarize them using AI, and suggest actionable items based on the email content. The app features a modern, user-friendly interface and includes Google Sign-In for user authentication.
 
-## Table of Contents
+## Features
 
-1. [Setup Instructions](#setup-instructions)
-2. [Firebase Configuration](#firebase-configuration)
-3. [Running the Project](#running-the-project)
-4. [Contributing](#contributing)
-5. [License](#license)
+- **Google Sign-In**: Allows users to log in with their Gmail account.
+- **Email Summarization**: Fetches unread emails and provides a summary.
+- **Actionable Recommendations**: Generates actionable items from email content.
+- **Modern UI**: User-friendly interface with profile display and action buttons.
+
+## Technologies Used
+
+- **Kotlin**: Programming language used for Android development.
+- **Jetpack Compose**: UI toolkit for building native Android UIs.
+- **Firebase**: Authentication and backend services.
+- **Hugging Face API**: For generating email summaries and recommendations.
+
+## Prerequisites
+
+- Android Studio
+- A Firebase project
+- A Hugging Face API key
 
 ## Setup Instructions
 
-1. **Clone the Repository**
+### 1. Clone the Repository
 
-    ```bash
-    git clone https://github.com/yourusername/mailydaily.git
-    cd mailydaily
-    ```
+```bash
+git clone https://github.com/yourusername/mailydaily.git
+cd mailydaily
+```
 
-2. **Install Dependencies**
-
-    ```bash
-    npm install
-    ```
-
-## Firebase Configuration
+### 2.  Firebase Configuration
 
 1. **Create a Firebase Project**
 
