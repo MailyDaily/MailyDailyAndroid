@@ -4,7 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MailyDaily</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #f4f4f4;
+            padding: 1em;
+            text-align: center;
+        }
+        section {
+            padding: 2em;
+            margin: auto;
+            max-width: 900px;
+        }
+        h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        ul li {
+            margin-bottom: 0.5em;
+        }
+        #screenshots {
+            text-align: center;
+        }
+        #screenshots img {
+            max-width: 45%;
+            height: auto;
+            margin: 1%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        figure {
+            display: inline-block;
+            margin: 0;
+            padding: 0;
+        }
+        figcaption {
+            margin-top: 0.5em;
+            font-style: italic;
+        }
+        footer {
+            background-color: #f4f4f4;
+            padding: 1em;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
 </head>
 <body>
 <header>
@@ -33,14 +89,14 @@
 </section>
 
 <section id="screenshots">
-    <h2>Screenshots of current progress </h2>
-    </figure>
+    <h2>Screenshots of Current Progress</h2>
+    <figure>
         <img src="assets/screenshots/1.png" alt="Summary Screen">
         <figcaption>Summary of emails and recommended actions.</figcaption>
     </figure>
     <figure>
         <img src="assets/screenshots/2.png" alt="Email Card">
-        <figcaption>Example of the emails and how the actions are rendered</figcaption>
+        <figcaption>Example of the emails and how the actions are rendered.</figcaption>
     </figure>
 </section>
 
@@ -79,3 +135,4 @@
 </footer>
 </body>
 </html>
+
