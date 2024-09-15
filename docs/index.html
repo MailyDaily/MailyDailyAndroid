@@ -8,29 +8,72 @@
 </head>
 <body>
 <header>
-    <h1>Welcome to MailyDaily</h1>
+    <h1>MailyDaily</h1>
+    <p>Welcome to MailyDaily! 🌟 Your AI-powered email assistant that helps you manage your unread emails with ease.</p>
 </header>
-<main>
-    <section>
-        <h2>About MailyDaily</h2>
-        <p>MailyDaily is an Android app that integrates with Gmail to fetch unread emails, summarize them using AI, and suggest actionable items based on the email content.</p>
-    </section>
-    <section>
-        <h2>Features</h2>
-        <ul>
-            <li>Google Sign-In for user authentication.</li>
-            <li>Email summarization and actionable recommendations.</li>
-            <li>Modern, user-friendly interface.</li>
-        </ul>
-    </section>
-    <section>
-        <h2>Setup Instructions</h2>
-        <ol>
-            <li>Clone the repository and configure Firebase and Hugging Face API.</li>
-            <li>Build and run the app using Android Studio.</li>
-        </ol>
-    </section>
-</main>
+
+<section id="features">
+    <h2>Features</h2>
+    <ul>
+        <li><strong>Google Sign-In</strong>: Allows users to log in with their Gmail account.</li>
+        <li><strong>Email Summarization</strong>: Fetches unread emails and provides a summary.</li>
+        <li><strong>Actionable Recommendations</strong>: Generates actionable items from email content.</li>
+        <li><strong>Modern UI</strong>: User-friendly interface with profile display and action buttons.</li>
+    </ul>
+</section>
+
+<section id="technologies">
+    <h2>Technologies Used</h2>
+    <ul>
+        <li><strong>Kotlin</strong>: Programming language used for Android development.</li>
+        <li><strong>Jetpack Compose</strong>: UI toolkit for building native Android UIs.</li>
+        <li><strong>Firebase</strong>: Authentication and backend services.</li>
+        <li><strong>Hugging Face API</strong>: For generating email summaries and recommendations using the <strong>Mistralai/Mistral-Nemo-Instruct-2407</strong> model.</li>
+    </ul>
+</section>
+
+<section id="screenshots">
+    <h2>Screenshots of current progress </h2>
+    </figure>
+        <img src="assets/screenshots/1.png" alt="Summary Screen">
+        <figcaption>Summary of emails and recommended actions.</figcaption>
+    </figure>
+    <figure>
+        <img src="assets/screenshots/1.png" alt="Email Card">
+        <figcaption>Example of the emails and how the actions are rendered</figcaption>
+    </figure>
+</section>
+
+<section id="getting-started">
+    <h2>Getting Started</h2>
+    <ol>
+        <li><strong>Clone the Repository</strong>:
+            <pre><code>git clone https://github.com/yourusername/mailydaily.git</code></pre>
+        </li>
+        <li><strong>Setup Firebase</strong>: Follow the instructions in <code>firebase-setup.md</code> to configure Firebase for your project.</li>
+        <li><strong>Configure the API</strong>: You’ll need a Hugging Face API key. Update your project with this key to interact with the model.</li>
+        <li><strong>Run the App</strong>: Open the project in Android Studio and run it on an emulator or device.</li>
+    </ol>
+</section>
+
+<section id="contributing">
+    <h2>Contributing</h2>
+    <p>Feel free to contribute to the project by submitting issues or pull requests. We welcome all contributions!</p>
+</section>
+
+<section id="license">
+    <h2>License</h2>
+    <p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
+</section>
+
+<section id="acknowledgements">
+    <h2>Acknowledgements</h2>
+    <ul>
+        <li><a href="https://huggingface.co">Hugging Face</a> for the amazing AI models, particularly the <strong>Mistralai/Mistral-Nemo-Instruct-2407</strong> model used for summarization and recommendations.</li>
+        <li><a href="https://firebase.google.com">Firebase</a> for backend services.</li>
+    </ul>
+</section>
+
 <footer>
     <p>&copy; 2024 MailyDaily. All rights reserved.</p>
 </footer>

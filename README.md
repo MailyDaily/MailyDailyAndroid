@@ -49,59 +49,13 @@ cd mailydaily
 
     - Place the `google-services.json` file in the `app` directory of your Android project (the same directory as `AndroidManifest.xml`).
 
-4. **Configure Firebase in Your Project**
-
-    - Open `build.gradle` (Project level) and ensure the Google services classpath is included:
-
-      ```groovy
-      buildscript {
-          dependencies {
-              classpath 'com.google.gms:google-services:4.3.15'
-          }
-      }
-      ```
-
-    - Open `build.gradle` (App level) and apply the Google services plugin at the bottom of the file:
-
-      ```groovy
-      apply plugin: 'com.android.application'
-      apply plugin: 'com.google.gms.google-services'
-      ```
-
-    - Add Firebase dependencies:
-
-      ```groovy
-      dependencies {
-          implementation 'com.google.firebase:firebase-auth:23.4.0'
-          implementation 'com.google.firebase:firebase-firestore:24.7.0'
-      }
-      ```
-
-5. **Sync Your Project with Gradle Files**
-
-    - Click on **Sync Now** in Android Studio to sync your project with the updated Gradle files.
 
 ## Running the Project
 
-1. **Start the Development Server**
+1. Open Android Studio and sync your project.
+2. Connect an Android device or start an emulator.
+3. Click Run to build and run the app.
 
-    ```bash
-    npm start
-    ```
-
-2. **Run the App**
-
-    - For Android:
-
-      ```bash
-      npx react-native run-android
-      ```
-
-    - For iOS (macOS only):
-
-      ```bash
-      npx react-native run-ios
-      ```
 
 ## Contributing
 
