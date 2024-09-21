@@ -34,6 +34,33 @@
             margin-bottom: 1em;
             color: #0077ff;
         }
+        .chat {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 1em;
+            margin-bottom: 1em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+        }
+        .chat .user {
+            align-self: flex-end;
+            background: #0077ff;
+            color: white;
+            padding: 0.5em 1em;
+            border-radius: 10px;
+            max-width: 80%;
+            position: relative;
+        }
+        .chat .assistant {
+            align-self: flex-start;
+            background: #e6f7ff;
+            color: #333;
+            padding: 0.5em 1em;
+            border-radius: 10px;
+            max-width: 80%;
+            position: relative;
+        }
         ul {
             list-style: none;
             padding: 0;
@@ -88,14 +115,19 @@
 
 <section class="ideal-scenario">
     <h2>Ideal Scenario</h2>
-    <p>Imagine you wake up on a sunny morning, and as you stretch and get out of bed, your DailyMaily AI assistant greets you with a friendly voice:</p>
-    <blockquote>
-        “Good morning! You’ve got three unread emails waiting for you. The first is from the airline with your flight details for tomorrow. The second is a newsletter from Jamie filled with the latest industry updates. And the third is from your partner, asking about picking up the kids after school. Would you like to check in for your flight? I can handle that for you right now. Also, I can help you draft a reply to your partner about the kids. Just let me know how you’d like to proceed!”
-    </blockquote>
-    <p>You take a moment to think. “Yes, please check me in for the flight. And I’ll need to confirm with my partner that I can pick up the kids after work.”</p>
-    <p>“Got it! I’ll start the check-in process now,” the assistant replies. “And here’s a draft response for your partner: ‘Hi [Partner's Name], I’ll be able to pick up the kids after school. Just let me know if there’s anything else you need!’ Shall I send it?”</p>
-    <p>You nod, and the AI confirms, “Sent! Now you’re all checked in for your flight, and your boarding pass is ready. By the way, don’t forget to pack your essentials for the trip. Would you like me to remind you later?”</p>
-    <p>“Yes, that would be helpful!” you say, feeling grateful for the assistance.</p>
+    <div class="chat">
+        <div class="assistant">Good morning! You’ve got three unread emails waiting for you.</div>
+        <div class="user">What are they about?</div>
+        <div class="assistant">
+            The first is from the airline with your flight details for tomorrow. The second is a newsletter from Jamie filled with the latest industry updates. And the third is from your partner, asking about picking up the kids after school.
+        </div>
+        <div class="user">Would you like to check in for your flight? I can handle that for you right now.</div>
+        <div class="assistant">Yes, please check me in for the flight. And I’ll need to confirm with my partner that I can pick up the kids after work.</div>
+        <div class="assistant">Got it! I’ll start the check-in process now. Here’s a draft response for your partner: ‘Hi [Partner's Name], I’ll be able to pick up the kids after school. Just let me know if there’s anything else you need!’ Shall I send it?</div>
+        <div class="user">Yes!</div>
+        <div class="assistant">Sent! Now you’re all checked in for your flight, and your boarding pass is ready. By the way, don’t forget to pack your essentials for the trip. Would you like me to remind you later?</div>
+        <div class="user">Yes, that would be helpful!</div>
+    </div>
     <p>As you enjoy your coffee, you realize how much easier managing your emails and daily tasks has become. DailyMaily helps you stay on top of important responsibilities, ensuring you never miss a beat while keeping everything organized. You feel ready to tackle the day ahead, knowing your kids will be picked up on time and your travel plans are all set!</p>
 </section>
 
@@ -152,7 +184,7 @@
         <li><strong>Configure the API</strong>: You’ll need a Hugging Face API key. Update your project with this key to interact with the model.</li>
         <li><strong>Run the App</strong>: Open the project in Android Studio and run it on an emulator or device.</li>
     </ol>
-    <img src="assets/getting-started-image.png" alt="Getting Started" style="width:100%; max-width:600px; border-radius:8px;">
+    <img src="assets/getting-started-image.png" alt="Getting Started" style="max-width:100%; border-radius: 8px; margin-top: 1em;">
 </section>
 
 <section id="contributing">
