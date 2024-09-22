@@ -46,11 +46,6 @@ cd mailydaily
 ### 2. Use your Hugging Face API key
 At the moment the app is using a free API key from Hugging face. Please create and add your own key in the requests to avoid the maximum quota per hour.
 
-3. **Add `google-services.json` to Your Project**
-
-    - Place the `google-services.json` file in the `app` directory of your Android project (the same directory as `AndroidManifest.xml`).
-
-
 ## Running the Project
 
 1. Open Android Studio and sync your project.
