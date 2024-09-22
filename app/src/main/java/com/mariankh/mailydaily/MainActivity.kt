@@ -228,7 +228,7 @@ class MainActivity : ComponentActivity() {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "You are my mail assistant. Read this email, and tell me a summary in short and friendly way and recommended actions. " + truncatedContent)
+                put("content", "You are my friendly mail assistant. Read this email, and tell me a who is sending and for what reason and if there is anything I shall do. Offer recommended actions that I can do from the email, like reply or visit a url, or delete. Keep it short " + truncatedContent)
             }))
             put("max_tokens", 500)
             put("stream", false)
@@ -401,7 +401,7 @@ class MainActivity : ComponentActivity() {
 
         // Summarize emails once they have been fetched
         if (!isLoading && emailContentList.isNotEmpty() && emailSummary.isEmpty()) {
-            val emails = emailContentList.map { it.fullText }
+            val emails = emailContentList.map { it.snippet }
             LaunchedEffect(emails) {
                 summarizeEmails(emails, { summary ->
                     emailSummary = summary
@@ -583,11 +583,12 @@ class MainActivity : ComponentActivity() {
         val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
         val client = OkHttpClient()
+        val truncatedContent = emails.take(15000) // Truncate content to fit within token limit
         val jsonBody = JSONObject().apply {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "You are my mail assistant. Read this email, and tell me a who is sending and for what reason and if there is anything I shall do  in short and friendly way. Offer recommended actions." + emails)
+                put("content", "You are my mail assistant. Give me a summary of the emails that follow.  " + truncatedContent)
             }))
             put("max_tokens", 500)
             put("stream", false)
