@@ -31,7 +31,6 @@ MailyDaily is an Android app that integrates with Gmail to fetch unread emails, 
 ## Prerequisites
 
 - Android Studio
-- A Firebase project
 - A Hugging Face API key
 
 ## Setup Instructions
