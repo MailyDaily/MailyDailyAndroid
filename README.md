@@ -43,19 +43,8 @@ git clone https://github.com/yourusername/mailydaily.git
 cd mailydaily
 ```
 
-### 2.  Firebase Configuration
-
-1. **Create a Firebase Project**
-
-    - Go to the [Firebase Console](https://console.firebase.google.com/).
-    - Click on **Add project** and follow the setup instructions.
-
-2. **Add Your Android App to Firebase**
-
-    - In the Firebase Console, select your project.
-    - Click on the Android icon to add a new Android app.
-    - Register your app with the package name `com.mariankh.mailydaily`.
-    - Download the `google-services.json` file provided by Firebase.
+### 2. Use your Hugging Face API key
+At the moment the app is using a free API key from Hugging face. Please create and add your own key in the requests to avoid the maximum quota per hour.
 
 3. **Add `google-services.json` to Your Project**
 
