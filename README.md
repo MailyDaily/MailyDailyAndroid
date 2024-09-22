@@ -15,6 +15,12 @@ MailyDaily is an Android app that integrates with Gmail to fetch unread emails, 
 - **Voice Assistant Integration**: Allow users to interact with the app using voice commands. ❌
 - **Settings Screen**: Manage app settings and preferences. ❌
 
+## Current Progress 
+![Alt text]([relative%20path/to/img.jpg](https://github.com/mariankh1/MailyDailyAndroid/tree/version1/docs/assets/screenshots/1.png)?raw=true "Title")
+![Alt text]([relative%20path/to/img.jpg](https://github.com/mariankh1/MailyDailyAndroid/tree/version1/docs/assets/screenshots/2.png)?raw=true "Title")
+
+
+
 ## Technologies Used
 
 - **Kotlin**: Programming language used for Android development.
