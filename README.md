@@ -53,8 +53,8 @@ At the moment the app is using a free API key from Hugging face. Please create a
 
 
 ## Contributing
-
-We welcome contributions to **MailyDaily**! If you'd like to contribute, please follow these steps:
+Feel free to contribute to the project by submitting issues or pull requests. We welcome all contributions to **MailyDaily**!  
+If you'd like to contribute, please follow these steps:
 
 1. Fork the repository.
 2. Create a new branch (`git checkout -b feature-branch`).
