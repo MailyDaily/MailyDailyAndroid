@@ -38,7 +38,7 @@ MailyDaily is an Android app that integrates with Gmail to fetch unread emails, 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/mailydaily.git
+git clone https://github.com/MailyDaily/MailyDailyAndroid.git
 cd mailydaily
 ```
 
