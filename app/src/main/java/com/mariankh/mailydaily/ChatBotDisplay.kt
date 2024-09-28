@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 sealed class Message {
@@ -40,14 +41,14 @@ fun Boolean.ChatBotDisplay(
 ) {
     var messageList by remember { mutableStateOf(listOf<Message>()) }
     var userInput by remember { mutableStateOf(TextFieldValue("")) }
-    var isFirstInteraction by remember { mutableStateOf(true) } // Track first interaction
+    var isFirstInteraction by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
     var allemailSummary by remember { mutableStateOf("") }
-    var emailFunctionality = EmailFunctionality()
+    val emailFunctionality = remember { EmailFunctionality() }
 
-    var emailshistory : List<String> ;
+    // Function to send a message and scroll to the latest message
     fun sendMessage(message: Message) {
         messageList = messageList + message
         coroutineScope.launch {
@@ -55,24 +56,26 @@ fun Boolean.ChatBotDisplay(
         }
     }
 
-    // Summarize emails once they have been fetched
-    if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
-        var emails = emailContentList.map { it.sender + " " + it.subject }
-        LaunchedEffect(emails) {
-
-            emailFunctionality.sendtoModel(Promts.promtForSummarize, "", userAccount.displayName ?: "", { summary ->
-                allemailSummary = summary
-            }, { error ->
-                allemailSummary = "Error summarizing emails: $error"
-            })
+    // Summarize emails once loaded and available
+    LaunchedEffect(isLoading, emailContentList) {
+        if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
+            val emails = emailContentList.map { "${it.sender} ${it.subject}" }
+            emailFunctionality.sendtoModel(
+                Promts.promtForSummarize, "", userAccount.displayName ?: "", { summary ->
+                    allemailSummary = summary
+                }, { error ->
+                    allemailSummary = "Error summarizing emails: $error"
+                }
+            )
         }
     }
 
-    // Send bot message with summary once loading is complete and summary is available
-    if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isNotEmpty() && isFirstInteraction) {
-        val welcomeMessage = Message.BotMessage(allemailSummary)
-        sendMessage(welcomeMessage)
-        isFirstInteraction = false // Prevent further bot messages from being sent
+    // Send summary message after fetching and summarizing emails
+    LaunchedEffect(isLoading, allemailSummary) {
+        if (!isLoading && allemailSummary.isNotEmpty() && isFirstInteraction) {
+            sendMessage(Message.BotMessage(allemailSummary))
+            isFirstInteraction = false
+        }
     }
 
     Column(
@@ -91,9 +94,7 @@ fun Boolean.ChatBotDisplay(
         ) {
             Text(
                 text = "Hello, ${userAccount.displayName}!",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                )
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
             )
             userAccount.photoUrl?.let { photoUrl ->
                 Image(
@@ -137,50 +138,43 @@ fun Boolean.ChatBotDisplay(
             TextField(
                 value = userInput,
                 onValueChange = { newValue ->
-                    if (!isLoading) { // Only update user input if not loading
+                    if (!isLoading) {
                         userInput = newValue
                     }
                 },
                 placeholder = { Text(text = "Type your message...") },
                 modifier = Modifier.weight(1f),
-                enabled = !isLoading // Disable the text field when loading
+                enabled = !isLoading // Disable input during loading
             )
             Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = {
-                    if (userInput.text.isNotEmpty() && !isLoading) { // Check loading state before sending
+                    if (userInput.text.isNotEmpty() && !isLoading) {
                         val userMessage = Message.UserMessage(userInput.text)
-                        sendMessage(userMessage) // Send the user's input
-                        userInput = TextFieldValue("") // Clear the input field after sending
+                        sendMessage(userMessage)
+                        userInput = TextFieldValue("")
 
-                        // Simulate bot "thinking"
-                        val thinkingMessage = Message.BotMessage("Thinking...")
-                        sendMessage(thinkingMessage)
-                        var botresponse = "hi"
-                        // Simulate bot response with delay
-                        coroutineScope.launch {
-                           // delay(2000L) // 2 seconds delay to simulate thinking
+                        // Simulate bot thinking
+                        sendMessage(Message.BotMessage("Thinking..."))
 
+                        coroutineScope.launch(Dispatchers.IO) {
                             emailFunctionality.sendtoModel(
-                                userMessage.text,
-                                "",
-                                userAccount.displayName ?: "",
+                                userMessage.text, "", userAccount.displayName ?: "",
                                 { summary ->
-                                    botresponse = summary
-
-                                    messageList = messageList.dropLast(1) // Remove "Thinking..." message
-                                    Log.d("Debug", "sedning message"  +botresponse)
-                                    val botesponseMessge = Message.BotMessage(botresponse)
-                                    sendMessage(botesponseMessge)
+                                    // Switch back to main thread to update UI
+                                    coroutineScope.launch(Dispatchers.Main) {
+                                        messageList = messageList.dropLast(1) // Remove "Thinking..." message
+                                        sendMessage(Message.BotMessage(summary))
+                                    }
                                 },
                                 { error ->
-                                    botresponse = "I didnt get that. can you repeat? "
-                                })
-
-
+                                    coroutineScope.launch(Dispatchers.Main) {
+                                        sendMessage(Message.BotMessage("I didn't get that. Can you repeat?"))
+                                    }
+                                }
+                            )
                         }
                     }
-
                 },
                 modifier = Modifier.padding(start = 8.dp),
                 enabled = !this@ChatBotDisplay // Disable the button when loading
@@ -202,6 +196,7 @@ fun Boolean.ChatBotDisplay(
         }
     }
 }
+
 
 
 

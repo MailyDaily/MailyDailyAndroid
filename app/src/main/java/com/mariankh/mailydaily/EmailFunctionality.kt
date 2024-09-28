@@ -35,7 +35,7 @@ class EmailFunctionality {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "Hello, I am "+username +  promt + "" + emails + " . "+ additinalpromt)
+                put("content", "Hello, I am " +username +" "+  promt + ". You are dailyMaily my AI mail assistant." + emails + " . "+ additinalpromt)
             }))
             put("max_tokens", 8000)
             put("temperature", 0.5)

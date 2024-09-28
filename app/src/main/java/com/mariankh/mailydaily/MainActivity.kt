@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
 
                 val response: ListMessagesResponse = service.users().messages().list("me").apply {
                     q = "newer_than:1d" // Fetch emails from the last day
-                    maxResults = 10     // Limit to 10 emails
+                    maxResults = 3   // Limit to 10 emails
                 }.execute()
 
                 val messages = response.messages ?: emptyList()
@@ -164,7 +164,6 @@ class MainActivity : ComponentActivity() {
                         val actionsDeferred = async { emailfunctionality.extractRecommendedActions("FROM:" +emailContent.sender+ " DATE: "+ emailContent.date +" " + emailContent.fullText) }
 
                         val (summary, actions) = actionsDeferred.await()
-
                         // Update the email content with the fetched summary and actions
                         emailContent.fullText = summary
                        // emailContent.actions = actions
