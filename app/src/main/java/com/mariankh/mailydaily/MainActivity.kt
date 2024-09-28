@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
 
                 val response: ListMessagesResponse = service.users().messages().list("me").apply {
                     q = "newer_than:1d" // Fetch emails from the last day
-                    maxResults = 3   // Limit to 10 emails
+                    maxResults = 10   // Limit to 10 emails
                 }.execute()
 
                 val messages = response.messages ?: emptyList()

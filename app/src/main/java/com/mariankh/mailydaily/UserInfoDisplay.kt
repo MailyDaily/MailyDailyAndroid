@@ -71,7 +71,7 @@ fun UserInfoDisplay(
     if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
         val emails = emailContentList.map {  it.sender + "  " +it.subject }
         LaunchedEffect(emails) {
-            emailFunctionality.sendtoModel(Promts.promtForSummarize," ", ""+userAccount.displayName, { summary ->
+            emailFunctionality.sendToModel(Promts.promtForSummarize," ", ""+userAccount.displayName, { summary ->
                 allemailSummary = summary
             }, { error ->
                 allemailSummary = "Error summarizing emails: $error"

@@ -27,21 +27,52 @@ class EmailFunctionality {
     val apiKey ="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" // Replace with your actual API key
     val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
+    val conversationHistory = mutableListOf<JSONObject>()
 
-    fun sendtoModel(promt :String, additinalpromt: String, username:String,onResult: (String) -> Unit, onError: (String) -> Unit) {
+    // Function to append new messages to the conversation history
+    fun addMessageToHistory(role: String, content: String) {
+        val message = JSONObject().apply {
+            put("role", role)
+            put("content", content)
+        }
+        conversationHistory.add(message)
+        Log.d("CONVERSTAONHISTORU"," " +conversationHistory.size)
+    }
 
+
+    suspend fun sendToModel(
+        prompt: String,
+        additionalPrompt: String,
+        username: String,
+        onResult: (String) -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
         val client = OkHttpClient()
+
         val jsonBody = JSONObject().apply {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
-            put("messages", JSONArray().put(JSONObject().apply {
+            put("messages", JSONArray()
+                .put(JSONObject().apply {
+
+                    put("role", "system")
+                    put(
+                            "content",
+                            "Hello, I am " + username + " " + prompt + ". You are dailyMaily my AI mail assistant." + "Talk to be in a friendly mannner. Here are the .emails currently unread in the inbox if you need them to assist me" + emails + " . " + additionalPrompt
+                    )
+
+                })
+                .put(JSONObject().apply {
                 put("role", "user")
-                put("content", "Hello, I am " +username +" "+  promt + ". You are dailyMaily my AI mail assistant." + emails + " . "+ additinalpromt)
-            }))
-            put("max_tokens", 8000)
-            put("temperature", 0.5)
-            put("stream", false)
+                put(
+                    "content",
+                    "Hello, I am " + username + " can you give me my dailymail ? "
+                )}))
+        put("max_tokens", 8000)
+        put("temperature", 0.5)
+        put("stream", false)
         }.toString()
 
+        addMessageToHistory("system","I am " +username +" and You are dailyMaily my AI mail assistant." + "Talk to be in a friendly mannner. Here are the .emails currently unread in the inbox if you need them to assist me" + emails + " . ")
         val requestBody = RequestBody.create(
             "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
         )
@@ -78,6 +109,75 @@ class EmailFunctionality {
             }
         })
     }
+
+    suspend fun sendToModelwithHistory( role:String,
+                             prompt: String,
+                             additionalPrompt: String,
+                             username: String,
+                             onResult: (String) -> Unit,
+                             onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+
+        addMessageToHistory(role, prompt)
+
+        conversationHistory.forEach { message ->
+            print(message)
+        }
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("model", "mistralai/Mistral-Nemo-Instruct-2407")
+            put("messages", JSONArray().apply {
+                // Add all past messages from the conversation history to the request
+                conversationHistory.forEach { message ->
+                    put(message)
+                }
+            })
+            put("max_tokens", 14000)
+            put("temperature", 0.5)
+            put("stream", false)
+        }.toString()
+
+
+        println("Request jsonBody: $jsonBody")
+
+        val requestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
+        )
+
+        Log.d("ALLEMAILCONTENT", jsonBody);
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("Authorization", "Bearer $apiKey")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                onError(e.message ?: "Error occurred")
+            }
+
+
+            override fun onResponse(call: Call, response: Response) {
+                response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
+                    try {
+
+                        val content = JSONObject(responseBody)
+                            .getJSONArray("choices")
+                            .getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+
+                        println("Response Content: $content")
+                        content.let { onResult(it) }
+                        addMessageToHistory("assistant",content)
+                    } catch (e: JSONException) {
+                        e.printStackTrace() // Handle JSON parsing errors
+                    }
+                } ?: println("Request failed with code: ${response.code}")
+            }
+        })
+    }
+
 
 
     suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> =  withContext(

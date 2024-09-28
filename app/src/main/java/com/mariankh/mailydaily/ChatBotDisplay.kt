@@ -60,7 +60,7 @@ fun Boolean.ChatBotDisplay(
     LaunchedEffect(isLoading, emailContentList) {
         if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
             val emails = emailContentList.map { "${it.sender} ${it.subject}" }
-            emailFunctionality.sendtoModel(
+            emailFunctionality.sendToModel(
                 Promts.promtForSummarize, "", userAccount.displayName ?: "", { summary ->
                     allemailSummary = summary
                 }, { error ->
@@ -158,7 +158,8 @@ fun Boolean.ChatBotDisplay(
                         sendMessage(Message.BotMessage("Thinking..."))
 
                         coroutineScope.launch(Dispatchers.IO) {
-                            emailFunctionality.sendtoModel(
+
+                            emailFunctionality.sendToModelwithHistory("user",
                                 userMessage.text, "", userAccount.displayName ?: "",
                                 { summary ->
                                     // Switch back to main thread to update UI
