@@ -2,17 +2,11 @@ package com.mariankh.mailydaily
 
 import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.services.gmail.Gmail
 import com.google.api.services.gmail.model.Message
 import com.google.api.services.gmail.model.MessagePart
 import com.google.api.services.gmail.model.MessagePartHeader
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
@@ -29,17 +23,19 @@ import java.util.Base64
 import java.util.Date
 
 class EmailFunctionality {
+    val emails = EmailStore.emailHistory
     val apiKey ="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" // Replace with your actual API key
     val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
-    fun sendtoModel(promt :String, additinalpromt: String, username:String, emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
+
+    fun sendtoModel(promt :String, additinalpromt: String, username:String,onResult: (String) -> Unit, onError: (String) -> Unit) {
 
         val client = OkHttpClient()
         val jsonBody = JSONObject().apply {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "Hello, I am "+username +  promt + emails + " . "+ additinalpromt)
+                put("content", "Hello, I am "+username +  promt + "" + emails + " . "+ additinalpromt)
             }))
             put("max_tokens", 8000)
             put("temperature", 0.5)
@@ -235,6 +231,8 @@ class EmailFunctionality {
 
         return "No content available"
     }
+
+
 }
 
 data class EmailContent(

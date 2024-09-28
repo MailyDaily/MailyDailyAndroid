@@ -1,5 +1,6 @@
 package com.mariankh.mailydaily
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +47,7 @@ fun Boolean.ChatBotDisplay(
     var allemailSummary by remember { mutableStateOf("") }
     var emailFunctionality = EmailFunctionality()
 
+    var emailshistory : List<String> ;
     fun sendMessage(message: Message) {
         messageList = messageList + message
         coroutineScope.launch {
@@ -55,17 +57,15 @@ fun Boolean.ChatBotDisplay(
 
     // Summarize emails once they have been fetched
     if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
-        val emails = emailContentList.map { it.sender + " " + it.subject }
+        var emails = emailContentList.map { it.sender + " " + it.subject }
         LaunchedEffect(emails) {
-            emailFunctionality.sendtoModel(Promts.promtForSummarize, "", userAccount.displayName ?: "", emails, { summary ->
-                allemailSummary = summary
 
+            emailFunctionality.sendtoModel(Promts.promtForSummarize, "", userAccount.displayName ?: "", { summary ->
+                allemailSummary = summary
             }, { error ->
                 allemailSummary = "Error summarizing emails: $error"
             })
-
         }
-
     }
 
     // Send bot message with summary once loading is complete and summary is available
@@ -143,7 +143,7 @@ fun Boolean.ChatBotDisplay(
                 },
                 placeholder = { Text(text = "Type your message...") },
                 modifier = Modifier.weight(1f),
-                enabled = !isLoading// Disable the text field when loading
+                enabled = !isLoading // Disable the text field when loading
             )
             Spacer(modifier = Modifier.width(8.dp))
             Button(
@@ -153,10 +153,34 @@ fun Boolean.ChatBotDisplay(
                         sendMessage(userMessage) // Send the user's input
                         userInput = TextFieldValue("") // Clear the input field after sending
 
-                        // Simulate bot response
-                        val botResponse = Message.BotMessage("AI Response: I received your message: '${userInput.text}'")
-                        sendMessage(botResponse)
+                        // Simulate bot "thinking"
+                        val thinkingMessage = Message.BotMessage("Thinking...")
+                        sendMessage(thinkingMessage)
+                        var botresponse = "hi"
+                        // Simulate bot response with delay
+                        coroutineScope.launch {
+                           // delay(2000L) // 2 seconds delay to simulate thinking
+
+                            emailFunctionality.sendtoModel(
+                                userMessage.text,
+                                "",
+                                userAccount.displayName ?: "",
+                                { summary ->
+                                    botresponse = summary
+
+                                    messageList = messageList.dropLast(1) // Remove "Thinking..." message
+                                    Log.d("Debug", "sedning message"  +botresponse)
+                                    val botesponseMessge = Message.BotMessage(botresponse)
+                                    sendMessage(botesponseMessge)
+                                },
+                                { error ->
+                                    botresponse = "I didnt get that. can you repeat? "
+                                })
+
+
+                        }
                     }
+
                 },
                 modifier = Modifier.padding(start = 8.dp),
                 enabled = !this@ChatBotDisplay // Disable the button when loading
@@ -180,6 +204,7 @@ fun Boolean.ChatBotDisplay(
 }
 
 
+
 @Composable
 fun BotMessageBubble(message: String) {
     Box(
@@ -197,7 +222,7 @@ fun BotMessageBubble(message: String) {
             modifier = Modifier
                 .padding(12.dp)
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
                 .padding(12.dp),
             textAlign = TextAlign.Start // Text is right-aligned
         )

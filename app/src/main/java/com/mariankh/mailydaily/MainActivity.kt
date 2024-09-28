@@ -41,6 +41,10 @@ import org.json.JSONArray
 import java.util.Base64
 import java.util.Date
 
+object EmailStore {
+    var emailHistory: MutableList<EmailContent> = mutableListOf()
+}
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var googleSignInClient: GoogleSignInClient
@@ -175,6 +179,9 @@ class MainActivity : ComponentActivity() {
                 // Update UI state on the main thread
                 withContext(Dispatchers.Main) {
                     emailContentList = emailContents
+
+                    EmailStore.emailHistory.addAll(emailContents)
+
                 }
 
                 Log.d("EMAIL_FETCH", "Emails fetched successfully")
