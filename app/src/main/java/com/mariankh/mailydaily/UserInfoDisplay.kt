@@ -132,7 +132,7 @@ fun UserInfoDisplay(
             }
         } else {
             Text(
-                text = "Summary of your emails:",
+                text = "Here is an overview of your unread emails",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
