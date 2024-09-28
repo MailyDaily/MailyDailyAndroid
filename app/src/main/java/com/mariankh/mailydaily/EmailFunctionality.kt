@@ -14,19 +14,77 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.Response
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
+import java.io.IOException
 import java.util.Base64
 import java.util.Date
 
 class EmailFunctionality {
+    val apiKey ="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" // Replace with your actual API key
+    val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
+
+    fun sendtoModel(promt :String, additinalpromt: String, username:String, emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
+
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("model", "mistralai/Mistral-Nemo-Instruct-2407")
+            put("messages", JSONArray().put(JSONObject().apply {
+                put("role", "user")
+                put("content", "Hello, I am "+username +  promt + emails + " . "+ additinalpromt)
+            }))
+            put("max_tokens", 8000)
+            put("temperature", 0.5)
+            put("stream", false)
+        }.toString()
+
+        val requestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
+        )
+
+        Log.d("ALLEMAILCONTENT", jsonBody);
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("Authorization", "Bearer $apiKey")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                onError(e.message ?: "Error occurred")
+            }
 
 
-    suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> = withContext(
+            override fun onResponse(call: Call, response: Response) {
+                response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
+                    try {
+                        val content = JSONObject(responseBody)
+                            .getJSONArray("choices")
+                            .getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+
+                        println("Response Content: $content")
+                        content.let { onResult(it) }
+
+                    } catch (e: JSONException) {
+                        e.printStackTrace() // Handle JSON parsing errors
+                    }
+                } ?: println("Request failed with code: ${response.code}")
+            }
+        })
+    }
+
+
+    suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> =  withContext(
         Dispatchers.IO) {
         Log.d("EXTRACT ACTIONS", "Starting request with email content: ${emailContent.take(500)}...")
 
@@ -59,7 +117,6 @@ class EmailFunctionality {
             Log.d("EXTRACT ACTIONS", "Sending request to API")
             val response = client.newCall(request).execute()
 
-            Log.d("EXTRACT ACTIONS", "Response received with code: ${response.code}")
             if (response.isSuccessful) {
                 val responseBody = response.body?.string().orEmpty()
                 Log.d("RESPONSE", "Response body: $responseBody")
@@ -179,3 +236,14 @@ class EmailFunctionality {
         return "No content available"
     }
 }
+
+data class EmailContent(
+    val id: String,
+    val date: String,
+    val sender: String,
+    val subject: String,
+    val snippet: String,
+    var fullText: String,
+    var category: String,
+    var actions: List<ActionItem>
+)

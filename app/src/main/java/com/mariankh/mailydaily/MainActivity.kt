@@ -1,10 +1,6 @@
 package com.mariankh.mailydaily
 
-import okhttp3.*
-import org.json.JSONObject
-import java.io.IOException
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,27 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -55,7 +31,6 @@ import com.mariankh.mailydaily.ui.theme.MailyDailyTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import coil.compose.rememberImagePainter
 import com.google.api.services.gmail.model.MessagePart
 import com.google.api.services.gmail.model.MessagePartHeader
 import kotlinx.coroutines.CoroutineScope
@@ -72,8 +47,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var signInLauncher: ActivityResultLauncher<Intent>
     private var userAccount: GoogleSignInAccount? by mutableStateOf(null)
     private var emailContentList: List<EmailContent> by mutableStateOf(emptyList())
-    private var isLoading by mutableStateOf(false)
 
+    var isLoading =false
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,7 +77,8 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "home") {
                     composable("home") {
                         if (userAccount != null) {
-                            UserInfoDisplay( userAccount!!, emailContentList, isLoading,navController)
+
+                            isLoading.ChatBotDisplay(userAccount!!,isLoading, emailContentList, navController)
                         } else {
                             Greeting("Android") {
                                 initiateSignIn()
@@ -187,7 +163,7 @@ class MainActivity : ComponentActivity() {
 
                         // Update the email content with the fetched summary and actions
                         emailContent.fullText = summary
-                        emailContent.actions = actions
+                       // emailContent.actions = actions
 
                         emailContents.add(emailContent)
                     }
@@ -199,15 +175,15 @@ class MainActivity : ComponentActivity() {
                 // Update UI state on the main thread
                 withContext(Dispatchers.Main) {
                     emailContentList = emailContents
-                    isLoading = false
                 }
 
                 Log.d("EMAIL_FETCH", "Emails fetched successfully")
+                isLoading=false
             } catch (e: Exception) {
                 Log.e("EMAIL_FETCH", "Error fetching emails", e)
                 // Ensure UI is updated to stop loading spinner if an error occurred
                 withContext(Dispatchers.Main) {
-                    isLoading = false
+
                 }
             }
         }

@@ -66,11 +66,12 @@ fun UserInfoDisplay(
     var allemailSummary by remember { mutableStateOf("") }
     var actions by remember { mutableStateOf(emptyList<ActionItem>()) }
 
+    var emailFunctionality = EmailFunctionality()
     // Summarize emails once they have been fetched
     if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
         val emails = emailContentList.map {  it.sender + "  " +it.subject }
         LaunchedEffect(emails) {
-            summarizeAllEmails(emails, { summary ->
+            emailFunctionality.sendtoModel(Promts.promtForSummarize," ", ""+userAccount.displayName, emails, { summary ->
                 allemailSummary = summary
             }, { error ->
                 allemailSummary = "Error summarizing emails: $error"
@@ -120,7 +121,7 @@ fun UserInfoDisplay(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(11.dp))
 
         if (isLoading) {
             Box(
@@ -131,14 +132,6 @@ fun UserInfoDisplay(
                 CircularProgressIndicator()
             }
         } else {
-            Text(
-                text = "Here is an overview of your unread emails",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = allemailSummary,
                 style = MaterialTheme.typography.bodyLarge
@@ -205,66 +198,7 @@ fun UserInfoDisplay(
         }
     }
 }
-fun summarizeAllEmails(emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
-    val apiKey ="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" // Replace with your actual API key
-    val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
-    val client = OkHttpClient()
-    val truncatedContent = emails.take(25000) // Truncate content to fit within token limit
-    val jsonBody = JSONObject().apply {
-        put("model", "mistralai/Mistral-Nemo-Instruct-2407")
-        put("messages", JSONArray().put(JSONObject().apply {
-            put("role", "user")
-            put("content", "Hello, tell me \"X sent you an email about Y, and Y about X in a paragraph. be short and polite.  Say that you are my email AI assistant and that you are here to help me handle these effortlesly" + truncatedContent)
-        }))
-        put("max_tokens", 8000)
-        put("temperature", 0.5)
-        put("stream", false)
-    }.toString()
-
-    val requestBody = RequestBody.create(
-        "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
-    )
-
-    val request = Request.Builder()
-        .url(url)
-        .post(requestBody)
-        .addHeader("Authorization", "Bearer $apiKey")
-        .build()
-
-    client.newCall(request).enqueue(object : Callback {
-        override fun onFailure(call: Call, e: IOException) {
-            onError(e.message ?: "Error occurred")
-        }
-
-        override fun onResponse(call: Call, response: Response) {
-            response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
-                try {
-                    val content = JSONObject(responseBody)
-                        .getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content")
-
-                    println("Response Content: $content")
-                    content.let { onResult(it) }
-                } catch (e: JSONException) {
-                    e.printStackTrace() // Handle JSON parsing errors
-                }
-            } ?: println("Request failed with code: ${response.code}")
-        }
-    })
-}
-data class EmailContent(
-    val id: String,
-    val date: String,
-    val sender: String,
-    val subject: String,
-    val snippet: String,
-    var fullText: String,
-    var category: String,
-    var actions: List<ActionItem>
-)
 
 data class ActionItem(val text: String, val url: String?)
 
