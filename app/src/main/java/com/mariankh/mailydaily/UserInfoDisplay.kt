@@ -210,12 +210,12 @@ fun summarizeAllEmails(emails: List<String>, onResult: (String) -> Unit, onError
     val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
     val client = OkHttpClient()
-    val truncatedContent = emails.take(15000) // Truncate content to fit within token limit
+    val truncatedContent = emails.take(25000) // Truncate content to fit within token limit
     val jsonBody = JSONObject().apply {
         put("model", "mistralai/Mistral-Nemo-Instruct-2407")
         put("messages", JSONArray().put(JSONObject().apply {
             put("role", "user")
-            put("content", "Hello, tell me \"X sent you an email about Y, and Y about X in a paragraph. be short and polite. " + truncatedContent)
+            put("content", "Hello, tell me \"X sent you an email about Y, and Y about X in a paragraph. be short and polite.  Say that you are my email AI assistant and that you are here to help me handle these effortlesly" + truncatedContent)
         }))
         put("max_tokens", 8000)
         put("temperature", 0.5)
