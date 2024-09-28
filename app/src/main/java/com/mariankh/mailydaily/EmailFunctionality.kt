@@ -40,8 +40,7 @@ class EmailFunctionality {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "You are my friendly mail assistant. Read this email, and tell me a who is sending and for what reason and if there is anything I shall do. Offer recommended actions that I can do from the email, like reply or visit a url, or delete. Keep it short " + truncatedContent)
-            }))
+                put("content", "You are my mail assistant. Read this email, and tell me a **Summary** in short and friendly way and recommended actions. " + truncatedContent)            }))
             put("max_tokens", 500)
             put("stream", false)
         }.toString()
@@ -119,12 +118,14 @@ class EmailFunctionality {
         val emailDate = message.internalDate?.let { Date(it) } ?: Date()
         val emailSnippet = message.snippet ?: "No snippet"
         val senderEmail = getSenderEmail(message)
+        val subjectEmail = getSubject(message)
         val emailFullText = extractEmailBody(message.payload)
 
         return EmailContent(
             id = messageId,
             date = emailDate.toString(),
             sender = senderEmail,
+            subject =subjectEmail,
             snippet = emailSnippet,
             fullText = emailFullText,
             category = "Unknown", // Placeholder, will be updated
@@ -136,6 +137,12 @@ class EmailFunctionality {
         val headers: List<MessagePartHeader>? = message.payload?.headers
         val fromHeader = headers?.find { it.name == "From" }
         return fromHeader?.value ?: "Unknown sender"
+    }
+
+    private fun getSubject(message: Message): String {
+        val headers: List<MessagePartHeader>? = message.payload?.headers
+        val subjectHeader = headers?.find { it.name == "Subject" }
+        return subjectHeader?.value ?: "No subject"
     }
 
     private fun extractEmailBody(payload: MessagePart?): String {

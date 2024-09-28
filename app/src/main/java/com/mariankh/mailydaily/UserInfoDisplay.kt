@@ -1,6 +1,7 @@
 package com.mariankh.mailydaily
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +52,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 
@@ -60,17 +63,17 @@ fun UserInfoDisplay(
     isLoading: Boolean,
     navController: NavController
 ) {
-    var emailSummary by remember { mutableStateOf("") }
+    var allemailSummary by remember { mutableStateOf("") }
     var actions by remember { mutableStateOf(emptyList<ActionItem>()) }
 
     // Summarize emails once they have been fetched
-    if (!isLoading && emailContentList.isNotEmpty() && emailSummary.isEmpty()) {
-        val emails = emailContentList.map { it.snippet }
+    if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
+        val emails = emailContentList.map {  it.sender + "  " +it.subject }
         LaunchedEffect(emails) {
-            summarizeEmails(emails, { summary ->
-                emailSummary = summary
+            summarizeAllEmails(emails, { summary ->
+                allemailSummary = summary
             }, { error ->
-                emailSummary = "Error summarizing emails: $error"
+                allemailSummary = "Error summarizing emails: $error"
             })
         }
     }
@@ -137,7 +140,7 @@ fun UserInfoDisplay(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = emailSummary,
+                text = allemailSummary,
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -202,8 +205,8 @@ fun UserInfoDisplay(
         }
     }
 }
-fun summarizeEmails(emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
-    val apiKey = "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" // Replace with your actual API key
+fun summarizeAllEmails(emails: List<String>, onResult: (String) -> Unit, onError: (String) -> Unit) {
+    val apiKey ="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" // Replace with your actual API key
     val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
     val client = OkHttpClient()
@@ -212,9 +215,10 @@ fun summarizeEmails(emails: List<String>, onResult: (String) -> Unit, onError: (
         put("model", "mistralai/Mistral-Nemo-Instruct-2407")
         put("messages", JSONArray().put(JSONObject().apply {
             put("role", "user")
-            put("content", "You are my mail assistant. Give me a summary of the emails that follow.  " + truncatedContent)
+            put("content", "Hello, tell me \"X sent you an email about Y, and Y about X in a paragraph. be short and polite. " + truncatedContent)
         }))
-        put("max_tokens", 500)
+        put("max_tokens", 8000)
+        put("temperature", 0.5)
         put("stream", false)
     }.toString()
 
@@ -234,12 +238,20 @@ fun summarizeEmails(emails: List<String>, onResult: (String) -> Unit, onError: (
         }
 
         override fun onResponse(call: Call, response: Response) {
-            response.body?.string()?.let { responseBody ->
-                // Parse the summary from Hugging Face
-                val jsonResponse = JSONObject(responseBody)
-                val summary = jsonResponse.optJSONArray("summary_text")?.getString(0)
-                summary?.let { onResult(it) }
-            } ?: onError("Empty response")
+            response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
+                try {
+                    val content = JSONObject(responseBody)
+                        .getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content")
+
+                    println("Response Content: $content")
+                    content.let { onResult(it) }
+                } catch (e: JSONException) {
+                    e.printStackTrace() // Handle JSON parsing errors
+                }
+            } ?: println("Request failed with code: ${response.code}")
         }
     })
 }
@@ -247,6 +259,7 @@ data class EmailContent(
     val id: String,
     val date: String,
     val sender: String,
+    val subject: String,
     val snippet: String,
     var fullText: String,
     var category: String,
