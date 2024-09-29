@@ -51,8 +51,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var signInLauncher: ActivityResultLauncher<Intent>
     private var userAccount: GoogleSignInAccount? by mutableStateOf(null)
     private var emailContentList: List<EmailContent> by mutableStateOf(emptyList())
+    private var isLoading by mutableStateOf(false) // Ensure isLoading is tracked by Compose
 
-    var isLoading =false
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,22 +67,27 @@ class MainActivity : ComponentActivity() {
 
         signInLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) {
+                if (result.resultCode == RESULT_OK && result.data != null) {
                     val data = result.data
                     val task = GoogleSignIn.getSignedInAccountFromIntent(data)
                     handleSignInResult(task)
+                } else {
+                    Log.e("SIGN_IN", "Sign-in canceled or failed")
                 }
             }
 
-
         setContent {
-            MailyDailyTheme {
+
                 val navController = rememberNavController()
                 NavHost(navController = navController, startDestination = "home") {
                     composable("home") {
                         if (userAccount != null) {
-
-                            isLoading.ChatBotDisplay(userAccount!!,isLoading, emailContentList, navController)
+                            ChatBotDisplay(
+                                userAccount!!,
+                                isLoading,
+                                emailContentList,
+                                navController
+                            )
                         } else {
                             Greeting("Android") {
                                 initiateSignIn()
@@ -91,22 +96,22 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("logout") {
                         LogoutScreen {
-                            // Handle logout logic here
                             userAccount = null // Clear the user account
-                            navController.navigate("home") // Navigate back to home
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                            }
                         }
                     }
                 }
-            }
-        }
 
+
+        }
     }
 
     private fun initiateSignIn() {
         val signInIntent = googleSignInClient.signInIntent
-        Log.d("SIGN_IN", "Sign-in ok?  1")
+        Log.d("SIGN_IN", "Initiating sign-in")
         signInLauncher.launch(signInIntent)
-        Log.d("SIGN_IN", "Sign-in ok? 2 ")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -123,28 +128,27 @@ class MainActivity : ComponentActivity() {
             Log.e("SIGN_IN", "Sign-in failed: ${e.statusCode} - ${e.message}", e)
         }
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun fetchEmails(account: GoogleSignInAccount) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.d("EMAIL_FETCH", "Fetching emails")
-                isLoading = true
+                isLoading = true // Start loading
+
                 val credential = GoogleAccountCredential.usingOAuth2(
                     this@MainActivity, listOf("https://www.googleapis.com/auth/gmail.readonly")
                 ).apply {
                     selectedAccount = account.account
                 }
 
-                val emailfunctionality = EmailFunctionality()
+                val emailFunctionality = EmailFunctionality()
                 val transport: HttpTransport = NetHttpTransport()
                 val jsonFactory: JsonFactory = GsonFactory.getDefaultInstance()
 
                 val service = Gmail.Builder(
-                    transport,
-                    jsonFactory,
-                    credential
-                ).setApplicationName("MailyDaily")
-                    .build()
+                    transport, jsonFactory, credential
+                ).setApplicationName("MailyDaily").build()
 
                 val response: ListMessagesResponse = service.users().messages().list("me").apply {
                     q = "newer_than:1d" // Fetch emails from the last day
@@ -158,15 +162,17 @@ class MainActivity : ComponentActivity() {
                 val jobs = messages.map { message ->
                     async {
                         val msg: Message = service.users().messages().get("me", message.id).execute()
-                        val emailContent = emailfunctionality.extractEmailContent(msg, service)
+                        val emailContent = emailFunctionality.extractEmailContent(msg, service)
 
-                        // Classify the email and extract actions
-                        val actionsDeferred = async { emailfunctionality.extractRecommendedActions("FROM:" +emailContent.sender+ " DATE: "+ emailContent.date +" " + emailContent.fullText) }
+                        val actionsDeferred = async {
+                            emailFunctionality.extractRecommendedActions(
+                                "FROM:" + emailContent.sender + " DATE: " + emailContent.date + " " + emailContent.fullText
+                            )
+                        }
 
                         val (summary, actions) = actionsDeferred.await()
-                        // Update the email content with the fetched summary and actions
                         emailContent.fullText = summary
-                       // emailContent.actions = actions
+                        // emailContent.actions = actions
 
                         emailContents.add(emailContent)
                     }
@@ -178,23 +184,17 @@ class MainActivity : ComponentActivity() {
                 // Update UI state on the main thread
                 withContext(Dispatchers.Main) {
                     emailContentList = emailContents
-
                     EmailStore.emailHistory.addAll(emailContents)
-
+                    isLoading = false // Stop loading
                 }
 
                 Log.d("EMAIL_FETCH", "Emails fetched successfully")
-                isLoading=false
             } catch (e: Exception) {
                 Log.e("EMAIL_FETCH", "Error fetching emails", e)
-                // Ensure UI is updated to stop loading spinner if an error occurred
                 withContext(Dispatchers.Main) {
-
+                    isLoading = false // Stop loading in case of error
                 }
             }
         }
     }
-
-
-
 }

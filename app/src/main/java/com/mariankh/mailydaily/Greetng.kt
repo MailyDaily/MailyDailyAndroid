@@ -23,7 +23,7 @@ fun Greeting(userType: String, onSignInClick: () -> Unit) {
             text = "Welcome to Daily Maily, $userType!\nI am your AI-Email assistant!",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onSurface
             ),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 24.dp)

@@ -33,7 +33,7 @@ sealed class Message {
 }
 
 @Composable
-fun Boolean.ChatBotDisplay(
+fun ChatBotDisplay(
     userAccount: GoogleSignInAccount,
     isLoading: Boolean,
     emailContentList: List<EmailContent>,
@@ -178,23 +178,13 @@ fun Boolean.ChatBotDisplay(
                     }
                 },
                 modifier = Modifier.padding(start = 8.dp),
-                enabled = !this@ChatBotDisplay // Disable the button when loading
+
             ) {
                 Text(text = "Send")
             }
         }
 
-        // Show loading indicator if loading
-        if (this@ChatBotDisplay) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Loading...", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+
     }
 }
 
@@ -213,7 +203,7 @@ fun BotMessageBubble(message: String) {
             text = message,
             style = TextStyle(
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onSurface
             ),
             modifier = Modifier
                 .padding(12.dp)
