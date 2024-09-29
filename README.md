@@ -54,15 +54,52 @@ At the moment the app is using a free API key from Hugging face. Please create a
 3. Click Run to build and run the app.
 
 
-## Contributing
-Feel free to contribute to the project by submitting issues or pull requests. We welcome all contributions to **MailyDaily**!  
-If you'd like to contribute, please follow these steps:
+## Contributing to MailyDaily
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes and commit them (`git commit -am 'Add new feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Create a new Pull Request.
+We’re excited to welcome contributions to MailyDaily! Whether you’ve found a bug, have an idea for a new feature, or want to enhance the project, your help is appreciated. Follow the guide below to get started.
+
+### How to Contribute
+
+1. **Fork the Repository**  
+
+    First, fork the repository by clicking the "Fork" button at the top-right of this page. This creates your own copy of the repository where you can make changes.
+
+3. **Clone Your Fork**  
+
+    After forking, clone your forked repository to your local machine:
+   ```bash
+   git clone https://github.com/your-username/MailyDaily.git
+   cd MailyDaily
+   ```
+4. **Create a New Branch**
+
+    It’s best to create a new branch to keep your work separate from the main project:
+bash
+```bash
+  git checkout -b feature-branch
+```
+ Replace feature-branch with a descriptive name (e.g., add-login-feature or fix-typo-in-readme).
+ 
+4. **Make Your Changes**
+
+    Now you can make your changes to the code or documentation.
+   
+6.  **Commit Your Changes**
+
+ After making changes, commit them with a descriptive message:
+```bash
+git commit -am "Add new login feature"
+```
+
+6.  **Push Your Changes**
+
+Push your changes to your forked repository on GitHub:
+```bash
+git push origin feature-branch
+```
+7.  **Create a Pull Request (PR)**
+   
+   Go back to the original repository (where you forked from) and create a pull request. You’ll see an option to compare your branch with the original one. Add a detailed description of what you’ve changed or added.
 
 ## License
 
