@@ -105,6 +105,19 @@ git push origin feature-branch
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+
+### Acknowledgements
+
+This project is currently maintained by **[Marian Kh](https://github.com/mariankh1)** and **[Poulami Mukherjee](https://github.com/poulami-mukherjee)**
+
+We would also like to extend our gratitude to the following contributors and supporters who have helped make MailyDaily better:
+
+- Women Who Code Volunteers: For helping grow the project.
+- The open-source community: For continuous feedback, suggestions, and code contributions.
+- [Hugging Face](https://huggingface.co/): For providing the AI models that power email summarization and action items.
+
+Special thanks to everyone who has supported or contributed to the development of MailyDaily!
+
 ---
 
 Happy coding!
