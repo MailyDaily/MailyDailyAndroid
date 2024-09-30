@@ -1,275 +1,178 @@
 package com.mariankh.mailydaily
 
-import android.os.Build
 import android.util.Log
-import com.google.api.services.gmail.Gmail
 import com.google.api.services.gmail.model.Message
 import com.google.api.services.gmail.model.MessagePart
 import com.google.api.services.gmail.model.MessagePartHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Call
-import okhttp3.Callback
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
-import java.util.Base64
-import java.util.Date
+import java.util.*
 
 class EmailFunctionality {
-    val emails = EmailStore.emailHistory
-    val apiKey ="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" // Replace with your actual API key
-    val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
-    val conversationHistory = mutableListOf<JSONObject>()
+    // TODO - Need to move it to a secure location
+    private val apiKey = "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"
 
-    // Function to append new messages to the conversation history
-    fun addMessageToHistory(role: String, content: String) {
-        val message = JSONObject().apply {
-            put("role", role)
-            put("content", content)
-        }
-        conversationHistory.add(message)
-        Log.d("CONVERSTAONHISTORU"," " +conversationHistory.size)
-    }
-
-
-    suspend fun sendToModel(
+    // Function to send data to HuggingFace API for summarization
+    fun sendToModel(
         prompt: String,
         additionalPrompt: String,
-        username: String,
         onResult: (String) -> Unit,
         onError: (String) -> Unit
-    ) = withContext(Dispatchers.IO) {
+    ) {
+        val apiUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
+
         val client = OkHttpClient()
-
-        val jsonBody = JSONObject().apply {
+        val requestBody = JSONObject().apply {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
-            put("messages", JSONArray()
-                .put(JSONObject().apply {
-
-                    put("role", "system")
-                    put(
-                            "content",
-                            "Hello, I am " + username + " " + prompt + ". You are dailyMaily my AI mail assistant." + "Talk to be in a friendly mannner. Here are the .emails currently unread in the inbox if you need them to assist me" + emails + " . " + additionalPrompt
-                    )
-
-                })
-                .put(JSONObject().apply {
+            put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put(
-                    "content",
-                    "Hello, I am " + username + " can you give me my dailymail ? "
-                )}))
-        put("max_tokens", 8000)
-        put("temperature", 0.5)
-        put("stream", false)
-        }.toString()
-
-        addMessageToHistory("system","I am " +username +" and You are dailyMaily my AI mail assistant." + "Talk to be in a friendly mannner. Here are the .emails currently unread in the inbox if you need them to assist me" + emails + " . ")
-        val requestBody = RequestBody.create(
-            "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
-        )
-
-        Log.d("ALLEMAILCONTENT", jsonBody);
-        val request = Request.Builder()
-            .url(url)
-            .post(requestBody)
-            .addHeader("Authorization", "Bearer $apiKey")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                onError(e.message ?: "Error occurred")
-            }
-
-
-            override fun onResponse(call: Call, response: Response) {
-                response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
-                    try {
-                        val content = JSONObject(responseBody)
-                            .getJSONArray("choices")
-                            .getJSONObject(0)
-                            .getJSONObject("message")
-                            .getString("content")
-
-                        println("Response Content: $content")
-                        content.let { onResult(it) }
-
-                    } catch (e: JSONException) {
-                        e.printStackTrace() // Handle JSON parsing errors
-                    }
-                } ?: println("Request failed with code: ${response.code}")
-            }
-        })
-    }
-
-    suspend fun sendToModelwithHistory( role:String,
-                             prompt: String,
-                             additionalPrompt: String,
-                             username: String,
-                             onResult: (String) -> Unit,
-                             onError: (String) -> Unit
-    ) = withContext(Dispatchers.IO) {
-
-        addMessageToHistory(role, prompt)
-
-        conversationHistory.forEach { message ->
-            print(message)
-        }
-        val client = OkHttpClient()
-        val jsonBody = JSONObject().apply {
-            put("model", "mistralai/Mistral-Nemo-Instruct-2407")
-            put("messages", JSONArray().apply {
-                // Add all past messages from the conversation history to the request
-                conversationHistory.forEach { message ->
-                    put(message)
-                }
-            })
-            put("max_tokens", 14000)
-            put("temperature", 0.5)
+                put("content", "$prompt $additionalPrompt")
+            }))
+            put("max_tokens", 500)
             put("stream", false)
-        }.toString()
+        }.toString().toRequestBody("application/json".toMediaTypeOrNull())
 
-
-        println("Request jsonBody: $jsonBody")
-
-        val requestBody = RequestBody.create(
-            "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody.toString()
-        )
-
-        Log.d("ALLEMAILCONTENT", jsonBody);
         val request = Request.Builder()
-            .url(url)
+            .url(apiUrl)
             .post(requestBody)
             .addHeader("Authorization", "Bearer $apiKey")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                onError(e.message ?: "Error occurred")
+                onError("Failed to communicate with the model: ${e.message}")
             }
 
-
             override fun onResponse(call: Call, response: Response) {
-                response.takeIf { it.isSuccessful }?.body?.string()?.let { responseBody ->
-                    try {
-
-                        val content = JSONObject(responseBody)
-                            .getJSONArray("choices")
-                            .getJSONObject(0)
-                            .getJSONObject("message")
-                            .getString("content")
-
-                        println("Response Content: $content")
-                        content.let { onResult(it) }
-                        addMessageToHistory("assistant",content)
-                    } catch (e: JSONException) {
-                        e.printStackTrace() // Handle JSON parsing errors
-                    }
-                } ?: println("Request failed with code: ${response.code}")
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string().orEmpty()
+                    val summary = parseSummaryFromResponse(responseBody)
+                    onResult(summary)
+                } else {
+                    onError("Error: ${response.message}")
+                }
             }
         })
     }
 
+    // Parse the response from HuggingFace to extract a summary
+    private fun parseSummaryFromResponse(responseBody: String): String {
+        val jsonObject = JSONObject(responseBody)
+        val choicesArray = jsonObject.optJSONArray("choices") ?: return "No summary available."
+        val message = choicesArray.getJSONObject(0).optJSONObject("message")
+        return message?.optString("content", "No content available") ?: "No summary available."
+    }
 
+    // Function to extract recommended actions and summary from email content using HuggingFace API
+    suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> = withContext(Dispatchers.IO) {
+        Log.d("EXTRACT_ACTIONS", "Starting request with email content: ${emailContent.take(500)}...")
 
-    suspend fun extractRecommendedActions(emailContent: String): Pair<String, List<ActionItem>> =  withContext(
-        Dispatchers.IO) {
-        Log.d("EXTRACT ACTIONS", "Starting request with email content: ${emailContent.take(500)}...")
-
-        val apiKey = "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"
-        val url = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
+        val apiUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions"
 
         val client = OkHttpClient()
-        val truncatedContent = emailContent.take(15000) // Truncate content to fit within token limit
+        val truncatedContent = emailContent.take(15000) // Limit the email content to avoid exceeding token limit
 
+        // Create JSON body for HuggingFace API request
         val jsonBody = JSONObject().apply {
             put("model", "mistralai/Mistral-Nemo-Instruct-2407")
             put("messages", JSONArray().put(JSONObject().apply {
                 put("role", "user")
-                put("content", "You are my mail assistant. Read this email, and tell me a **Summary** in short and friendly way and recommended actions. " + truncatedContent)            }))
+                put("content", "You are my mail assistant. Read this email, and tell me a **Summary** in short and friendly way and recommended actions. " + truncatedContent)
+            }))
             put("max_tokens", 500)
             put("stream", false)
-        }.toString()
-
-        val requestBody = RequestBody.create(
-            "application/json; charset=utf-8".toMediaTypeOrNull(), jsonBody
-        )
+        }.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
 
         val request = Request.Builder()
-            .url(url)
-            .post(requestBody)
+            .url(apiUrl)
+            .post(jsonBody)
             .addHeader("Authorization", "Bearer $apiKey")
             .build()
 
         try {
-            Log.d("EXTRACT ACTIONS", "Sending request to API")
+            Log.d("EXTRACT_ACTIONS", "Sending request to API")
             val response = client.newCall(request).execute()
 
+            Log.d("EXTRACT_ACTIONS", "Response received with code: ${response.code}")
             if (response.isSuccessful) {
                 val responseBody = response.body?.string().orEmpty()
                 Log.d("RESPONSE", "Response body: $responseBody")
 
-                val jsonObject = JSONObject(responseBody)
-                val choicesArray = jsonObject.optJSONArray("choices")
-                var summary = ""
-                val actions = mutableListOf<ActionItem>()
-
-                choicesArray?.let { array ->
-                    if (array.length() > 0) {
-                        val item = array.getJSONObject(0)
-                        val message = item.optJSONObject("message")
-                        val generatedText = message?.optString("content", "No text available")
-                        if (!generatedText.isNullOrBlank()) {
-                            val lines = generatedText.split("\n").map { it.trim() }
-                            val summaryIndex = lines.indexOfFirst { it.startsWith("**Summary:**") }
-                            if (summaryIndex != -1) {
-                                summary = lines[summaryIndex].removePrefix("**Summary:**").trim()
-                            }
-                            val actionsIndex = lines.indexOfFirst { it.startsWith("**Recommended Actions:**") }
-                            if (actionsIndex != -1) {
-                                val actionLines = lines.drop(actionsIndex + 1)
-                                actionLines.forEach { line ->
-                                    val linkRegex = """\[(.*?)\]\((.*?)\)""".toRegex()
-                                    val matchResult = linkRegex.find(line)
-                                    if (matchResult != null) {
-                                        val (text, url) = matchResult.destructured
-                                        actions.add(ActionItem(text, url))
-                                    } else {
-                                        actions.add(ActionItem(line, null))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Pair(summary, actions)
+                return@withContext parseResponse(responseBody)
             } else {
                 Log.e("ERROR", "Request failed with code ${response.code}")
-                Log.e("ERROR RESPONSE", response.body?.string().orEmpty())
-                Pair("Error fetching actions", emptyList())
+                return@withContext Pair("Error fetching actions", emptyList())
             }
         } catch (e: Exception) {
             Log.e("ERROR", "Exception during API call", e)
-            Pair("Error fetching actions", emptyList())
+            return@withContext Pair("Error fetching actions", emptyList())
         }
     }
 
+    // Parse HuggingFace API response to extract summary and actions
+    private fun parseResponse(responseBody: String): Pair<String, List<ActionItem>> {
+        val jsonObject = JSONObject(responseBody)
+        val choicesArray = jsonObject.optJSONArray("choices")
+        var summary = ""
+        val actions = mutableListOf<ActionItem>()
 
+        choicesArray?.let { array ->
+            if (array.length() > 0) {
+                val item = array.getJSONObject(0)
+                val message = item.optJSONObject("message")
+                val generatedText = message?.optString("content", "No text available")
+                if (!generatedText.isNullOrBlank()) {
+                    val lines = generatedText.split("\n").map { it.trim() }
+                    summary = extractSummaryFromText(lines)
+                    actions.addAll(extractActionsFromText(lines))
+                }
+            }
+        }
 
+        return Pair(summary, actions)
+    }
 
-    fun extractEmailContent(message: Message, service: Gmail): EmailContent {
+    // Extract summary from API response
+    private fun extractSummaryFromText(lines: List<String>): String {
+        val summaryIndex = lines.indexOfFirst { it.startsWith("**Summary:**") }
+        return if (summaryIndex != -1) {
+            lines[summaryIndex].removePrefix("**Summary:**").trim()
+        } else {
+            "No summary available"
+        }
+    }
+
+    // Extract recommended actions from API response
+    private fun extractActionsFromText(lines: List<String>): List<ActionItem> {
+        val actions = mutableListOf<ActionItem>()
+        val actionsIndex = lines.indexOfFirst { it.startsWith("**Recommended Actions:**") }
+        if (actionsIndex != -1) {
+            val actionLines = lines.drop(actionsIndex + 1)
+            actionLines.forEach { line ->
+                val linkRegex = """\[(.*?)\]\((.*?)\)""".toRegex()
+                val matchResult = linkRegex.find(line)
+                if (matchResult != null) {
+                    val (text, linkUrl) = matchResult.destructured
+                    actions.add(ActionItem(text, linkUrl))
+                } else {
+                    actions.add(ActionItem(line, null))
+                }
+            }
+        }
+        return actions
+    }
+
+    // Function to extract email content such as sender, subject, and full body
+    fun extractEmailContent(message: Message): EmailContent {
         val messageId = message.id ?: "No ID"
         val emailDate = message.internalDate?.let { Date(it) } ?: Date()
-        val emailSnippet = message.snippet ?: "No snippet"
         val senderEmail = getSenderEmail(message)
         val subjectEmail = getSubject(message)
         val emailFullText = extractEmailBody(message.payload)
@@ -278,37 +181,33 @@ class EmailFunctionality {
             id = messageId,
             date = emailDate.toString(),
             sender = senderEmail,
-            subject =subjectEmail,
-            snippet = emailSnippet,
+            subject = subjectEmail,
             fullText = emailFullText,
-            category = "Unknown", // Placeholder, will be updated
-            actions = emptyList() // Placeholder, will be updated
+            actions = emptyList()
         )
     }
 
+    // Helper function to get the sender's email address
     private fun getSenderEmail(message: Message): String {
-        val headers: List<MessagePartHeader>? = message.payload?.headers
+        val headers = message.payload?.headers
         val fromHeader = headers?.find { it.name == "From" }
         return fromHeader?.value ?: "Unknown sender"
     }
 
+    // Helper function to get the subject of the email
     private fun getSubject(message: Message): String {
-        val headers: List<MessagePartHeader>? = message.payload?.headers
+        val headers = message.payload?.headers
         val subjectHeader = headers?.find { it.name == "Subject" }
         return subjectHeader?.value ?: "No subject"
     }
 
+    // Extract email body from MessagePart
     private fun extractEmailBody(payload: MessagePart?): String {
         if (payload == null) return "No content available"
 
         fun decodeBase64(encoded: String?): ByteArray? {
             return try {
-                if (encoded == null) null
-                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    Base64.getUrlDecoder().decode(encoded)
-                } else {
-                    TODO("VERSION.SDK_INT < O")
-                }
+                if (encoded == null) null else Base64.getUrlDecoder().decode(encoded)
             } catch (e: IllegalArgumentException) {
                 null
             }
@@ -319,29 +218,6 @@ class EmailFunctionality {
             if (bodyData != null) return String(bodyData)
         }
 
-        if (payload.parts != null && payload.parts.isNotEmpty()) {
-            for (part in payload.parts) {
-                val mimeType = part.mimeType ?: continue
-                val partData = decodeBase64(part.body?.data)
-                if (partData != null && (mimeType == "text/plain" || mimeType == "text/html")) {
-                    return String(partData)
-                }
-            }
-        }
-
         return "No content available"
     }
-
-
 }
-
-data class EmailContent(
-    val id: String,
-    val date: String,
-    val sender: String,
-    val subject: String,
-    val snippet: String,
-    var fullText: String,
-    var category: String,
-    var actions: List<ActionItem>
-)
