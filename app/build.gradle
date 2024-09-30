@@ -7,19 +7,9 @@ android {
     namespace 'com.mariankh.mailydaily'
     compileSdk 34
 
-    signingConfigs {
-        debug {
-            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword System.getenv("DEBUG_KEYSTORE_PASSWORD") ?: "android"
-            keyAlias System.getenv("DEBUG_KEY_ALIAS") ?: "androiddebugkey"
-            keyPassword System.getenv("DEBUG_KEY_PASSWORD") ?: "android"
-        }
-        // TODO - Need to add signingConfigs for other non-development/production stages
-    }
-
     defaultConfig {
         applicationId "com.mariankh.mailydaily"
-        minSdk 26
+        minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -31,8 +21,9 @@ android {
     }
 
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
@@ -112,4 +103,8 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:1.4.0" // Or the version you're using
 
     implementation("io.github.cdimascio:dotenv-kotlin:6.0.0")
+
+
+
+
 }
