@@ -104,6 +104,8 @@ dependencies {
 
     implementation("io.github.cdimascio:dotenv-kotlin:6.0.0")
 
+    //voice
+    implementation 'net.gotev:speech:1.6.2'
 
 
 

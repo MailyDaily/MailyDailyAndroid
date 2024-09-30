@@ -9,7 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -20,26 +22,20 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
-import com.google.api.services.gmail.Gmail
-import com.google.api.services.gmail.model.ListMessagesResponse
-import com.google.api.services.gmail.model.Message
 import com.google.api.client.http.HttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
-import com.mariankh.mailydaily.ui.theme.MailyDailyTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.google.api.services.gmail.model.MessagePart
-import com.google.api.services.gmail.model.MessagePartHeader
+import com.google.api.services.gmail.Gmail
+import com.google.api.services.gmail.model.ListMessagesResponse
+import com.google.api.services.gmail.model.Message
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import org.json.JSONArray
-import java.util.Base64
-import java.util.Date
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.gotev.speech.Speech
 
 object EmailStore {
     var emailHistory: MutableList<EmailContent> = mutableListOf()
@@ -56,7 +52,8 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Speech.init(this, getPackageName());
+        Speech.getInstance().say("say something");
         // Configure Google Sign-In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
@@ -108,6 +105,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+    override fun onDestroy() {
+        Speech.getInstance().shutdown()
+        super.onDestroy()
+        // prevent memory leaks when activity is destroyed
+    }
     private fun initiateSignIn() {
         val signInIntent = googleSignInClient.signInIntent
         Log.d("SIGN_IN", "Initiating sign-in")
