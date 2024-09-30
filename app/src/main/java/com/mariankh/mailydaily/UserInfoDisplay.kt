@@ -1,41 +1,23 @@
 package com.mariankh.mailydaily
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -44,17 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
-import java.io.IOException
 
 @Composable
 fun UserInfoDisplay(
@@ -66,16 +37,24 @@ fun UserInfoDisplay(
     var allemailSummary by remember { mutableStateOf("") }
     var actions by remember { mutableStateOf(emptyList<ActionItem>()) }
 
-    var emailFunctionality = EmailFunctionality()
+    // Create EmailFunctionality instance
+    val emailFunctionality = EmailFunctionality()
+    val context = LocalContext.current
+
     // Summarize emails once they have been fetched
     if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
-        val emails = emailContentList.map {  it.sender + "  " +it.subject }
+        val emails = emailContentList.joinToString("\n") { "${it.sender}: ${it.subject}" }
         LaunchedEffect(emails) {
-            emailFunctionality.sendToModel(Promts.promtForSummarize," ", ""+userAccount.displayName, { summary ->
-                allemailSummary = summary
-            }, { error ->
-                allemailSummary = "Error summarizing emails: $error"
-            })
+            emailFunctionality.sendToModel(
+                prompt = "Summarize these emails",
+                additionalPrompt = emails,
+                onResult = { summary ->
+                    allemailSummary = summary
+                },
+                onError = { error ->
+                    Toast.makeText(context, "Error summarizing emails: $error", Toast.LENGTH_LONG).show()
+                }
+            )
         }
     }
 
@@ -113,11 +92,9 @@ fun UserInfoDisplay(
                         .clip(CircleShape)
                         .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         .clickable {
-                            // Navigate to the logout screen when the profile picture is clicked
                             navController.navigate("logout")
                         }
                 )
-
             }
         }
 
@@ -151,8 +128,7 @@ fun UserInfoDisplay(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(emailContentList.size) { index ->
-                    val emailContent = emailContentList[index]
+                items(emailContentList) { emailContent ->
                     EmailCard(emailContent)
                 }
             }
@@ -170,18 +146,14 @@ fun UserInfoDisplay(
 
             actions.forEach { actionItem ->
                 if (actionItem.url != null) {
-                    ClickableText(
+                    Text(
                         text = AnnotatedString(actionItem.text),
-                        onClick = { offset ->
-                            val annotatedString = AnnotatedString(actionItem.text)
-                            annotatedString.getStringAnnotations("URL", offset, offset).firstOrNull()?.let { annotation ->
-                                val uri = Uri.parse(annotation.item)
-                                //  LocalContext.current.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                            }
+                        modifier = Modifier.clickable {
+                            handleLinkClick(actionItem.url, context)
                         },
                         style = TextStyle(
                             color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.LineThrough
+                            textDecoration = TextDecoration.Underline
                         )
                     )
                 } else {
@@ -189,7 +161,7 @@ fun UserInfoDisplay(
                         text = actionItem.text,
                         style = TextStyle(
                             color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.LineThrough
+                            textDecoration = TextDecoration.None
                         )
                     )
                 }
@@ -199,10 +171,20 @@ fun UserInfoDisplay(
     }
 }
 
+// Helper function to handle link clicks (opening URL in the browser)
+fun handleLinkClick(url: String, context: Context) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Unable to open link: $url", Toast.LENGTH_SHORT).show()
+    }
+}
 
+// Data class for an action item with a text and optional URL
 data class ActionItem(val text: String, val url: String?)
 
-
+// Composable for displaying an email in a card
 @Composable
 fun EmailCard(emailContent: EmailContent) {
     Card(
@@ -213,8 +195,7 @@ fun EmailCard(emailContent: EmailContent) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(text = "From: ${emailContent.sender}", style = MaterialTheme.typography.bodyLarge)
             Text(text = "Date: ${emailContent.date}", style = MaterialTheme.typography.bodyMedium)
@@ -223,7 +204,7 @@ fun EmailCard(emailContent: EmailContent) {
             Spacer(modifier = Modifier.height(8.dp))
             emailContent.actions.forEach { action ->
                 Button(
-                    onClick = { /* Handle action */ },
+                    onClick = { handleAction(action) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -238,3 +219,7 @@ fun EmailCard(emailContent: EmailContent) {
     }
 }
 
+// Function to handle action clicks (for future expansion)
+fun handleAction(action: ActionItem) {
+    Log.d("Action", "Performing action: ${action.text} with URL: ${action.url}")
+}
