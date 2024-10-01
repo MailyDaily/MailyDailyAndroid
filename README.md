@@ -16,7 +16,9 @@ MailyDaily is an Android app that integrates with Gmail to fetch unread emails, 
 - **Settings Screen**: Manage app settings and preferences. ❌
 
 ## Current Progress 
+
 <p align="center">
+    <img src="https://github.com/MailyDaily/MailyDailyAndroid/blob/version1/docs/assets/screenshots/version3.gif" alt="Image 1" width="300"/>
   <img src="https://github.com/mariankh1/MailyDailyAndroid/blob/version1/docs/assets/screenshots/1.png" alt="Image 1" width="300"/>
   <img src="https://github.com/mariankh1/MailyDailyAndroid/blob/version1/docs/assets/screenshots/2.png" alt="Image 2" width="300"/>
 
