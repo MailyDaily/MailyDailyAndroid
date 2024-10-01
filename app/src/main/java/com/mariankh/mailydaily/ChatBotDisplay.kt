@@ -1,6 +1,5 @@
 package com.mariankh.mailydaily
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,11 +33,23 @@ sealed class Message {
 
 @Composable
 fun ChatBotDisplay(
-    userAccount: GoogleSignInAccount,
+    userAccount: GoogleSignInAccount?,
+    imapAccount: ImapAccount? = null,
     isLoading: Boolean,
     emailContentList: List<EmailContent>,
     navController: NavController
 ) {
+
+    var displayName = " "
+
+   if (userAccount!=null) {
+       displayName= ""+userAccount.displayName;
+   }
+    if (imapAccount!=null) {
+        displayName= ""+imapAccount.username;
+    }
+
+
     var messageList by remember { mutableStateOf(listOf<Message>()) }
     var userInput by remember { mutableStateOf(TextFieldValue("")) }
     var isFirstInteraction by remember { mutableStateOf(true) }
@@ -61,7 +72,7 @@ fun ChatBotDisplay(
         if (!isLoading && emailContentList.isNotEmpty() && allemailSummary.isEmpty()) {
             val emails = emailContentList.map { "${it.sender} ${it.subject}" }
             emailFunctionality.sendToModel(
-                Promts.promtForSummarize, "", userAccount.displayName ?: "", { summary ->
+                Promts.promtForSummarize, "", displayName ?: "", { summary ->
                     allemailSummary = summary
                 }, { error ->
                     allemailSummary = "Error summarizing emails: $error"
@@ -93,10 +104,10 @@ fun ChatBotDisplay(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Hello, ${userAccount.displayName}!",
+                text = "Hello, ${displayName}!",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
             )
-            userAccount.photoUrl?.let { photoUrl ->
+            userAccount?.photoUrl?.let { photoUrl ->
                 Image(
                     painter = rememberImagePainter(photoUrl),
                     contentDescription = "User Profile Picture",
@@ -160,7 +171,7 @@ fun ChatBotDisplay(
                         coroutineScope.launch(Dispatchers.IO) {
 
                             emailFunctionality.sendToModelwithHistory("user",
-                                userMessage.text, "", userAccount.displayName ?: "",
+                                userMessage.text, "", displayName ?: "",
                                 { summary ->
                                     // Switch back to main thread to update UI
                                     coroutineScope.launch(Dispatchers.Main) {

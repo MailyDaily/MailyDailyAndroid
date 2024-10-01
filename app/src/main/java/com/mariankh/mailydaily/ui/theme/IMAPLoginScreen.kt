@@ -35,7 +35,10 @@ fun IMAPLoginScreen(
         // Username Field
         OutlinedTextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = {
+                username = it
+                errorMessage = null // Clear the error message on input change
+            },
             label = { Text("Username") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -45,7 +48,10 @@ fun IMAPLoginScreen(
         // Password Field
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                errorMessage = null // Clear the error message on input change
+            },
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation()
@@ -56,7 +62,10 @@ fun IMAPLoginScreen(
         // IMAP Server Field
         OutlinedTextField(
             value = imapServer,
-            onValueChange = { imapServer = it },
+            onValueChange = {
+                imapServer = it
+                errorMessage = null // Clear the error message on input change
+            },
             label = { Text("IMAP Server") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -66,7 +75,10 @@ fun IMAPLoginScreen(
         // IMAP Port Field
         OutlinedTextField(
             value = imapPort,
-            onValueChange = { imapPort = it },
+            onValueChange = {
+                imapPort = it
+                errorMessage = null // Clear the error message on input change
+            },
             label = { Text("IMAP Port") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -105,4 +117,3 @@ fun IMAPLoginScreen(
         }
     }
 }
-

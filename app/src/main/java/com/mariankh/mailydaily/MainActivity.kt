@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var signInLauncher: ActivityResultLauncher<Intent>
     private var userAccount: GoogleSignInAccount? by mutableStateOf(null)
+    private var imapAccount: ImapAccount? by mutableStateOf(null)
     private var emailContentList: List<EmailContent> by mutableStateOf(emptyList())
     private var isLoading by mutableStateOf(false) // Ensure isLoading is tracked by Compose
 
@@ -79,11 +80,21 @@ class MainActivity : ComponentActivity() {
                         if (userAccount != null) {
                             ChatBotDisplay(
                                 userAccount!!,
+                                imapAccount =null,
                                 isLoading,
                                 emailContentList,
                                 navController
                             )
-                        } else  {
+                        } else if (imapAccount != null) {
+                            ChatBotDisplay(
+                                userAccount = null, // No Google Account
+                                imapAccount = imapAccount,
+                                isLoading = isLoading,
+                                emailContentList = emailContentList,
+                                navController = navController
+                            )
+                        }
+                        else  {
 
                         Greeting(
                             userType = "User",
@@ -97,8 +108,11 @@ class MainActivity : ComponentActivity() {
                         IMAPLoginScreen { username, password, imapServer, imapPort, onError ->
                             // Call a function to authenticate using IMAP and fetch emails
                             Log.d("IMAPLoginScreen", "trying to login")
-
-                            authenticateWithIMAP(username, password, imapServer, imapPort, navController, onError)
+                            authenticateWithIMAP(username, password, imapServer, imapPort, navController, { imapAccount ->
+                                // Handle successful authentication
+                                this@MainActivity.imapAccount = imapAccount
+                               // fetchEmailsUsingIMAP(imapAccount) // Fetch emails if needed
+                            }, onError) // Pass the error callback
                         }
                     }
 

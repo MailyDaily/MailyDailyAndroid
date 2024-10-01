@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.navigation.NavController
 import com.mariankh.mailydaily.EmailContent
 import com.mariankh.mailydaily.EmailStore
+import com.mariankh.mailydaily.ImapAccount
+import com.mariankh.mailydaily.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,6 +20,7 @@ fun authenticateWithIMAP(
     imapServer: String,
     imapPort: String,
     navController: NavController,
+    onSuccess: (ImapAccount) -> Unit,
     onError: (String) -> Unit
 ) {
     // Run the network request in the background
@@ -32,15 +35,18 @@ fun authenticateWithIMAP(
                 put("mail.imap.timeout", "10000") // Set timeout
             }
 
-            Log.d("IMAPLoginScreen","Trying to login...")
+            Log.d("IMAPLoginScreen", "Trying to login...")
             val session = Session.getInstance(props, null)
             val store = session.getStore("imaps")
             store.connect(imapServer, username, password)
+
+            Log.d("IMAPLoginScreen", "Login successful, trying to connect to inbox...")
 
             val inbox = store.getFolder("INBOX")
             inbox.open(Folder.READ_ONLY)
 
             val messages: Array<Message> = inbox.messages.takeLast(1).toTypedArray()
+            Log.d("IMAPLoginScreen", "Fetched latest email: " + messages[0].subject)
 
             // Fetch email content
             val emailList = messages.map { message ->
@@ -56,21 +62,34 @@ fun authenticateWithIMAP(
                     snippet = mimeMessage.content.toString(),
                 )
             }
-
+            val imapAccount = ImapAccount(username = username, imapServer = imapServer)
             // Navigate back to home and display emails
             withContext(Dispatchers.Main) {
                 EmailStore.emailHistory.addAll(emailList)
+                EmailStore.emailHistory.addAll(emailList)
+                onSuccess(imapAccount)
                 navController.navigate("home") {
                     popUpTo("home") { inclusive = true }
                 }
             }
 
-        } catch (e: Exception) {
-            Log.e("IMAP_AUTH", "IMAP authentication failed: ${e.message}", e)
+        } catch (e: AuthenticationFailedException) {
+            Log.e("IMAP_AUTH", "Authentication failed: ${e.message}", e)
             // Handle authentication failure by passing the error message to the UI
             withContext(Dispatchers.Main) {
-                onError("Authentication failed: ${e.message}")
+                onError("Authentication failed. Please check your username and password.")
+            }
+        } catch (e: MessagingException) {
+            Log.e("IMAP_AUTH", "Connection error: ${e.message}", e)
+            withContext(Dispatchers.Main) {
+                onError("Failed to connect to IMAP server: ${e.message}")
+            }
+        } catch (e: Exception) {
+            Log.e("IMAP_AUTH", "Unexpected error: ${e.message}", e)
+            withContext(Dispatchers.Main) {
+                onError("An unexpected error occurred: ${e.message}")
             }
         }
     }
 }
+
