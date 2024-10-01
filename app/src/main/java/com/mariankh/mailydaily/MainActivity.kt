@@ -27,19 +27,14 @@ import com.google.api.client.http.HttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
-import com.mariankh.mailydaily.ui.theme.MailyDailyTheme
+import com.mariankh.mailydaily.mail.authenticateWithIMAP
+import com.mariankh.mailydaily.ui.theme.IMAPLoginScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.google.api.services.gmail.model.MessagePart
-import com.google.api.services.gmail.model.MessagePartHeader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import org.json.JSONArray
-import java.util.Base64
-import java.util.Date
 
 object EmailStore {
     var emailHistory: MutableList<EmailContent> = mutableListOf()
@@ -88,12 +83,26 @@ class MainActivity : ComponentActivity() {
                                 emailContentList,
                                 navController
                             )
-                        } else {
-                            Greeting("Android") {
-                                initiateSignIn()
-                            }
+                        } else  {
+
+                        Greeting(
+                            userType = "User",
+                            onGoogleSignInClick = { initiateGoogleSignIn() },
+                            onIMAPSignInClick = { navController.navigate("imapLogin") }
+                        )
+
                         }
                     }
+                    composable("imapLogin") {
+                        IMAPLoginScreen { username, password, imapServer, imapPort, onError ->
+                            // Call a function to authenticate using IMAP and fetch emails
+                            Log.d("IMAPLoginScreen", "trying to login")
+
+                            authenticateWithIMAP(username, password, imapServer, imapPort, navController, onError)
+                        }
+                    }
+
+
                     composable("logout") {
                         LogoutScreen {
                             userAccount = null // Clear the user account
@@ -108,7 +117,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun initiateSignIn() {
+    private fun initiateGoogleSignIn() {
         val signInIntent = googleSignInClient.signInIntent
         Log.d("SIGN_IN", "Initiating sign-in")
         signInLauncher.launch(signInIntent)

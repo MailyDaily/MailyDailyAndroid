@@ -81,7 +81,7 @@ fun UserInfoDisplay(
 
     // Extract actions from email content
     LaunchedEffect(emailContentList) {
-        val allActions = emailContentList.flatMap { it.actions }
+        val allActions = emailContentList.flatMap { it.actions!! }
         actions = allActions
     }
 
@@ -221,7 +221,7 @@ fun EmailCard(emailContent: EmailContent) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = emailContent.fullText, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            emailContent.actions.forEach { action ->
+            emailContent.actions?.forEach { action ->
                 Button(
                     onClick = { /* Handle action */ },
                     modifier = Modifier.fillMaxWidth(),

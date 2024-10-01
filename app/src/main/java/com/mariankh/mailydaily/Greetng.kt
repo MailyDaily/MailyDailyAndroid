@@ -1,4 +1,3 @@
-
 package com.mariankh.mailydaily
 
 import androidx.compose.foundation.layout.*
@@ -11,7 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun Greeting(userType: String, onSignInClick: () -> Unit) {
+fun Greeting(userType: String, onGoogleSignInClick: () -> Unit, onIMAPSignInClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -28,15 +27,31 @@ fun Greeting(userType: String, onSignInClick: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 24.dp)
         )
+
+        // Google Sign-In Button
         Button(
-            onClick = onSignInClick,
+            onClick = onGoogleSignInClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         ) {
             Text("Sign in with Google")
+        }
+
+        // IMAP Sign-In Button
+        Button(
+            onClick = onIMAPSignInClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Sign in with IMAP")
         }
     }
 }

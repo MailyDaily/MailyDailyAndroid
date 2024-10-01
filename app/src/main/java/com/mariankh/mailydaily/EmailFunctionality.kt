@@ -343,5 +343,5 @@ data class EmailContent(
     val snippet: String,
     var fullText: String,
     var category: String,
-    var actions: List<ActionItem>
+    var actions: List<ActionItem>?
 )
