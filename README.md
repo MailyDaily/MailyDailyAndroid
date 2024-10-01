@@ -1,4 +1,4 @@
-![version2](https://github.com/user-attachments/assets/a56f810a-a8d6-4c88-91b4-b7373c93268a)# MailyDaily
+#MailyDaily
 
 MailyDaily is an Android app that integrates with Gmail to fetch unread emails, summarize them using AI, and suggest actionable items based on the email content. The app features a modern, user-friendly interface and includes Google Sign-In for user authentication.
 
