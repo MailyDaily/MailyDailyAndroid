@@ -8,9 +8,9 @@ MailyDaily is an Android app that integrates with Gmail to fetch unread emails, 
 - **Email Summarization**: Fetches unread emails and provides a summary.✅
 - **Actionable Recommendations**: Generates actionable items from email content.✅
 - **Modern UI**: User-friendly interface with profile display and action buttons.⏳
-- **Conversations**: Allow user to request actions or clarifications for particular email❌
+- **Conversations**: Allow user to request actions or clarifications for particular email⏳
 - **Actions**: Delete email, reply  ❌
-- **Sign-In with other email clients**: Allows users to log in with accounts from various email clients.❌
+- **Sign-In with other email clients**: Allows users to log in with accounts from various email clients.⏳
 - **Email Notifications**: Notify users of new unread emails / every morning or on set time . ❌
 - **Voice Assistant Integration**: Allow users to interact with the app using voice commands. ❌
 - **Settings Screen**: Manage app settings and preferences. ❌
